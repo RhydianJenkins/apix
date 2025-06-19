@@ -18,5 +18,22 @@ func SetHandler(cmd *cobra.Command, args []string) {
 		Pass: pass,
 	}
 
+	existingDomain, _ := config.LoadDomain(name)
+
+	if existingDomain != nil {
+		if domain.Base == "" {
+			domain.Base = existingDomain.Base
+		}
+		if domain.Name == "" {
+			domain.Name = existingDomain.Name
+		}
+		if domain.User == "" {
+			domain.User = existingDomain.User
+		}
+		if domain.Pass == "" {
+			domain.Pass = existingDomain.Pass
+		}
+	}
+
 	config.SetDomain(domain)
 }

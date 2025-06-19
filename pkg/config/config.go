@@ -35,11 +35,11 @@ func LoadDomain(name string) (*Domain, error) {
 
 func SetDomain(domain *Domain) {
 	viper.SetConfigFile(cfgPath)
+
     if err := viper.MergeInConfig(); err != nil {
         if _, statErr := os.Stat(cfgPath); os.IsNotExist(statErr) {
             viper.SafeWriteConfigAs(cfgPath) // writes only if not present
         } else {
-            // something else went wrong
 			println("Error reading config file:", err)
         }
     }
