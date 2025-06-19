@@ -3,6 +3,3 @@ help: ## Show this help
 
 build: ## Build apix into a binary
 	@go build -o apix ./main.go
-
-run: ## Run apix
-	@go run ./main.go
