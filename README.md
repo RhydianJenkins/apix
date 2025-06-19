@@ -21,16 +21,24 @@ go build -o apix && mv apix /usr/local/bin
 
 ## 🚀 Usage
 
-```sh
-# Add a new domain named 'my-domain'
-apix add my-domain https://api.example.com --user foo --pass bar
+```
+API eXecuter (APIX) is a CLI tool to manage API domains and make requests
 
-# List domains
-apix list
+Usage:
+   [flags]
+   [command]
 
-# Switch to a domain
-apix switch my-domain
+Available Commands:
+  completion  Generate the autocompletion script for the specified shell
+  get         Send a GET request to the active domain
+  help        Help about any command
+  list        List all domain names saved in config
+  remove      Remove a domain from the config
+  set         Set a new or existing API domain
+  use         Sets the active domain to the specified name
 
-# Make API calls to that domain
-apix get /users # equivalent to `curl -u 'foo:bar' https://api.example.com/users`
+Flags:
+  -h, --help   help for this command
+
+Use " [command] --help" for more information about a command.
 ```
