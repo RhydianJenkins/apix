@@ -29,6 +29,7 @@ func SetActiveName(activeName string) (error) {
 		return fmt.Errorf("Active domain cannot be empty\n")
 	}
 
+	// TODO viper.InConfig exists...
 	if _, exists := cfg.Domains[activeName]; !exists {
 		return fmt.Errorf("Domain %q does not exist.\nUse 'list' command to show available domains or 'set' to add new ones.\n", activeName)
 	}
@@ -101,7 +102,8 @@ func RemoveDomain(nameToRemove string) error {
 		return fmt.Errorf("error reading config: %w", err)
 	}
 
-	viper.Set("domains."+nameToRemove, nil) // unset the key
+	// TODO Rhydian this doesn't seem to remove the key?
+	viper.Set("domains."+nameToRemove, nil)
 
 	if err := viper.WriteConfig(); err != nil {
 		return fmt.Errorf("error writing config: %w", err)
@@ -109,27 +111,3 @@ func RemoveDomain(nameToRemove string) error {
 
 	return nil
 }
-
-// TODO Rhydian also set active to ????
-// func RemoveDomain(nameToRemove string) (error) {
-// 	LoadConfig()
-//
-// 	if nameToRemove == "" {
-// 		return fmt.Errorf("name cannot be empty\n")
-// 	}
-//
-// 	// cur := cfg.Domains[nameToRemove]
-//
-// 	// if cur == nil {
-// 	// 	return fmt.Errorf("Name %q does not exist\n", nameToRemove)
-// 	// }
-//
-// 	viper.Set("domains."+nameToRemove, nil)
-//
-// 	if err := viper.WriteConfig(); err != nil {
-// 		return fmt.Errorf("error writing config: %w\n", err)
-// 	}
-//
-// 	fmt.Printf("Removed domain %q from config\n", nameToRemove)
-// 	return nil
-// }
