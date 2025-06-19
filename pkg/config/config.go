@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -21,21 +22,42 @@ type config struct {
 	Domains map[string]Domain `mapstructure:"domains"`
 }
 
-func LoadDomain(name string) (*Domain, error) {
-	viper.SetConfigFile(cfgPath)
-	viper.SetConfigType("yaml")
+func SetActiveDomain(activeDomain string) (error) {
+	cfg := LoadConfig()
 
-	return &Domain{
-		Base: viper.GetString(name + ".base"),
-		Name: viper.GetString(name + ".name"),
-		Pass: viper.GetString(name + ".pass"),
-		User: viper.GetString(name + ".base"),
-	}, nil
+	if activeDomain == "" {
+		return fmt.Errorf("active domain cannot be empty")
+	}
+
+	if _, exists := cfg.Domains[activeDomain]; !exists {
+		return fmt.Errorf("domain %q does not exist", activeDomain)
+	}
+
+	cfg.Active = activeDomain
+	return nil
+}
+
+func LoadActiveDomain() (*Domain, error) {
+	cfg := LoadConfig()
+	domain := cfg.Domains[cfg.Active]
+
+	return &domain, nil
+}
+
+func LoadDomain(name string) (*Domain, error) {
+	cfg := LoadConfig()
+
+	domain, ok := cfg.Domains[name]
+
+	if !ok {
+		return nil, fmt.Errorf("domain %q not found", name)
+	}
+
+	return &domain, nil
 }
 
 func LoadConfig() *config {
 	viper.SetConfigFile(cfgPath)
-	viper.SetConfigType("yaml")
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, statErr := os.Stat(cfgPath); os.IsNotExist(statErr) {

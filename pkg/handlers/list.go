@@ -22,7 +22,8 @@ func ListHandler(cmd *cobra.Command, args []string) {
 		if verbose {
 			domain := config.Domains[name]
 			fmt.Printf("\tBase: %s\n", domain.Base)
-			fmt.Printf("\tName: %s\n", domain.Name)
+			fmt.Printf("\tUser: %s\n", domain.User)
+			fmt.Printf("\tPass: %s\n", domain.Pass)
 		}
 	}
 }

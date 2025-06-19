@@ -24,9 +24,9 @@ func initCmd() *cobra.Command {
 	}
 
 	var setCmd = &cobra.Command{
-		Use:   "set [name] [base]",
+		Use: "set [name] [base]",
 		Short: "Set a new or existing API domain",
-		Args:  cobra.ExactArgs(2),
+		Args: cobra.ExactArgs(2),
 		Run: handlers.SetHandler,
 	}
 	setCmd.Flags().String("user", "", "basic auth username to use for this domain")
@@ -34,13 +34,21 @@ func initCmd() *cobra.Command {
 	rootCmd.AddCommand(setCmd)
 
 	var listCmd = &cobra.Command{
-		Use:   "list",
+		Use: "list",
 		Short: "List all domain names saved in config",
-		Args:  cobra.ExactArgs(0),
+		Args: cobra.ExactArgs(0),
 		Run: handlers.ListHandler,
 	}
 	listCmd.Flags().Bool("verbose", false, "Also list all information about each domain")
 	rootCmd.AddCommand(listCmd)
+
+	var getCmd = &cobra.Command{
+		Use: "get [path]",
+		Short: "Send a GET request to the active domain",
+		Args: cobra.MaximumNArgs(2),
+		Run: handlers.GetHandler,
+	}
+	rootCmd.AddCommand(getCmd)
 
 	return rootCmd
 }
