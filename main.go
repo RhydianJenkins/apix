@@ -50,5 +50,13 @@ func initCmd() *cobra.Command {
 	}
 	rootCmd.AddCommand(getCmd)
 
+	var switchCmd = &cobra.Command{
+		Use: "switch [name]",
+		Short: "Sets the active domain to the specified name",
+		Args: cobra.MinimumNArgs(1),
+		Run: handlers.SwitchHandler,
+	}
+	rootCmd.AddCommand(switchCmd)
+
 	return rootCmd
 }

@@ -33,7 +33,9 @@ func SetActiveDomain(activeDomain string) (error) {
 		return fmt.Errorf("domain %q does not exist", activeDomain)
 	}
 
-	cfg.Active = activeDomain
+	viper.Set("active", activeDomain)
+	viper.WriteConfig()
+
 	return nil
 }
 
