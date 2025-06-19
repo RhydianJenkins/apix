@@ -16,14 +16,15 @@ type Domain struct {
 	User string `yaml:"user"`
 }
 
-type Config struct {
+type config struct {
 	Active  string `mapstructure:"active"`
 	Domains map[string]Domain `mapstructure:"domains"`
 }
 
-func loadConfig(name string) (*Domain, error) {
+func LoadDomain(name string) (*Domain, error) {
 	viper.SetConfigFile(cfgPath)
 	viper.SetConfigType("yaml")
+
 	return &Domain{
 		Base: viper.GetString(name + ".base"),
 		Name: viper.GetString(name + ".name"),
@@ -33,8 +34,17 @@ func loadConfig(name string) (*Domain, error) {
 }
 
 func SetDomain(domain *Domain) {
+	viper.SetConfigFile(cfgPath)
+    if err := viper.MergeInConfig(); err != nil {
+        if _, statErr := os.Stat(cfgPath); os.IsNotExist(statErr) {
+            viper.SafeWriteConfigAs(cfgPath) // writes only if not present
+        } else {
+            // something else went wrong
+			println("Error reading config file:", err)
+        }
+    }
+
 	viper.Set("domains."+domain.Name, domain)
 	viper.Set("active", domain.Name)
-	viper.SetConfigFile(cfgPath)
 	viper.WriteConfig()
 }
