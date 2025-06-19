@@ -17,7 +17,7 @@ func main() {
 
 func initCmd() *cobra.Command {
 	var rootCmd = &cobra.Command{
-		Short: "apix is a CLI tool to manage API domains and make requests",
+		Short: "API eXecuter (APIX) is a CLI tool to manage API domains and make requests",
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.Help()
 		},
@@ -42,6 +42,8 @@ func initCmd() *cobra.Command {
 	listCmd.Flags().Bool("verbose", false, "Also list all information about each domain")
 	rootCmd.AddCommand(listCmd)
 
+	// TODO Rhydian more commands...
+	// post, patch, put, etc... may have to think more on the structure of this one?
 	var getCmd = &cobra.Command{
 		Use: "get [path]",
 		Short: "Send a GET request to the active domain",
@@ -50,13 +52,21 @@ func initCmd() *cobra.Command {
 	}
 	rootCmd.AddCommand(getCmd)
 
-	var switchCmd = &cobra.Command{
-		Use: "switch [name]",
+	var useCmd = &cobra.Command{
+		Use: "use [name]",
 		Short: "Sets the active domain to the specified name",
 		Args: cobra.MinimumNArgs(1),
-		Run: handlers.SwitchHandler,
+		Run: handlers.UseHandler,
 	}
-	rootCmd.AddCommand(switchCmd)
+	rootCmd.AddCommand(useCmd)
+
+	var removeCmd = &cobra.Command{
+		Use: "remove [name]",
+		Short: "Remove a domain from the config",
+		Args: cobra.MinimumNArgs(1),
+		Run: handlers.RemoveHandler,
+	}
+	rootCmd.AddCommand(removeCmd)
 
 	return rootCmd
 }

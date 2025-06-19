@@ -22,18 +22,18 @@ type config struct {
 	Domains map[string]Domain `mapstructure:"domains"`
 }
 
-func SetActiveDomain(activeDomain string) (error) {
+func SetActiveName(activeName string) (error) {
 	cfg := LoadConfig()
 
-	if activeDomain == "" {
-		return fmt.Errorf("active domain cannot be empty")
+	if activeName == "" {
+		return fmt.Errorf("Active domain cannot be empty\n")
 	}
 
-	if _, exists := cfg.Domains[activeDomain]; !exists {
-		return fmt.Errorf("domain %q does not exist", activeDomain)
+	if _, exists := cfg.Domains[activeName]; !exists {
+		return fmt.Errorf("Domain %q does not exist.\nUse 'list' command to show available domains or 'set' to add new ones.\n", activeName)
 	}
 
-	viper.Set("active", activeDomain)
+	viper.Set("active", activeName)
 	viper.WriteConfig()
 
 	return nil
@@ -63,7 +63,7 @@ func LoadConfig() *config {
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, statErr := os.Stat(cfgPath); os.IsNotExist(statErr) {
-			viper.SafeWriteConfigAs(cfgPath) // writes only if not present
+			viper.SafeWriteConfigAs(cfgPath)
 		} else {
 			println("Error reading config file:", err)
 		}
@@ -83,7 +83,7 @@ func SetDomain(domain *Domain) {
 
     if err := viper.MergeInConfig(); err != nil {
         if _, statErr := os.Stat(cfgPath); os.IsNotExist(statErr) {
-            viper.SafeWriteConfigAs(cfgPath) // writes only if not present
+            viper.SafeWriteConfigAs(cfgPath)
         } else {
 			println("Error reading config file:", err)
         }
@@ -93,3 +93,43 @@ func SetDomain(domain *Domain) {
 	viper.Set("active", domain.Name)
 	viper.WriteConfig()
 }
+
+func RemoveDomain(nameToRemove string) error {
+	viper.SetConfigFile(cfgPath)
+
+	if err := viper.ReadInConfig(); err != nil {
+		return fmt.Errorf("error reading config: %w", err)
+	}
+
+	viper.Set("domains."+nameToRemove, nil) // unset the key
+
+	if err := viper.WriteConfig(); err != nil {
+		return fmt.Errorf("error writing config: %w", err)
+	}
+
+	return nil
+}
+
+// TODO Rhydian also set active to ????
+// func RemoveDomain(nameToRemove string) (error) {
+// 	LoadConfig()
+//
+// 	if nameToRemove == "" {
+// 		return fmt.Errorf("name cannot be empty\n")
+// 	}
+//
+// 	// cur := cfg.Domains[nameToRemove]
+//
+// 	// if cur == nil {
+// 	// 	return fmt.Errorf("Name %q does not exist\n", nameToRemove)
+// 	// }
+//
+// 	viper.Set("domains."+nameToRemove, nil)
+//
+// 	if err := viper.WriteConfig(); err != nil {
+// 		return fmt.Errorf("error writing config: %w\n", err)
+// 	}
+//
+// 	fmt.Printf("Removed domain %q from config\n", nameToRemove)
+// 	return nil
+// }
