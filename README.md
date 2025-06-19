@@ -4,8 +4,6 @@
 
 **apix** is a lightweight CLI tool to manage and interact with multiple API domains. It supports user/password auth, domain switching, and prettified HTTP responses—all configured via a simple local YAML file.
 
----
-
 ## ✨ Features
 
 - Add and manage multiple API domains
@@ -14,16 +12,12 @@
 - Make GET requests to API endpoints
 - Pretty JSON output for responses
 
----
-
 ## 📦 Installation
 
 ```sh
 # from source
 go build -o apix && mv apix /usr/local/bin
 ```
-
----
 
 ## 🚀 Usage
 
