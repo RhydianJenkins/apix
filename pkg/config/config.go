@@ -33,6 +33,27 @@ func LoadDomain(name string) (*Domain, error) {
 	}, nil
 }
 
+func LoadConfig() *config {
+	viper.SetConfigFile(cfgPath)
+	viper.SetConfigType("yaml")
+
+	if err := viper.ReadInConfig(); err != nil {
+		if _, statErr := os.Stat(cfgPath); os.IsNotExist(statErr) {
+			viper.SafeWriteConfigAs(cfgPath) // writes only if not present
+		} else {
+			println("Error reading config file:", err)
+		}
+	}
+
+	var cfg config
+
+	if err := viper.Unmarshal(&cfg); err != nil {
+		println("Error unmarshalling config:", err)
+	}
+
+	return &cfg
+}
+
 func SetDomain(domain *Domain) {
 	viper.SetConfigFile(cfgPath)
 
