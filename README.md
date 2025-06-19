@@ -19,10 +19,8 @@
 ## 📦 Installation
 
 ```sh
-git clone https://github.com/yourusername/apix.git
-cd apix
-go build -o apix
-sudo mv apix /usr/local/bin/
+# from source
+go build -o apix && mv apix /usr/local/bin
 ```
 
 ---
