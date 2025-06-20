@@ -103,11 +103,11 @@ func RemoveDomain(nameToRemove string) error {
 	}
 
 	if !viper.IsSet("domains."+nameToRemove) {
-		return fmt.Errorf("diomain %q does not exist in your list of domains. See domains with `apix list`\n", nameToRemove)
+		return fmt.Errorf("Domain %q does not exist in your list of domains. See domains with `apix list`\n", nameToRemove)
 	}
 
 	if viper.GetString("active") == nameToRemove {
-		return fmt.Errorf("Unable to remove %q as it is currently your active domain.", nameToRemove)
+		return fmt.Errorf("Unable to remove %q as it is currently your active domain.\n", nameToRemove)
 	}
 
 	domainsMap := viper.GetStringMap("domains")
@@ -115,7 +115,7 @@ func RemoveDomain(nameToRemove string) error {
 	viper.Set("domains", domainsMap)
 
 	if err := viper.WriteConfig(); err != nil {
-		return fmt.Errorf("error writing config: %w", err)
+		return fmt.Errorf("Error writing config: %w\n", err)
 	}
 
 	return nil

@@ -1,6 +1,5 @@
 package main
 import (
-	"fmt"
 	"os"
 
 	"github.com/rhydianjenkins/apix/pkg/handlers"
@@ -10,7 +9,6 @@ import (
 func main() {
 	var rootCmd = initCmd()
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
 		os.Exit(1)
 	}
 }
@@ -26,6 +24,7 @@ func initCmd() *cobra.Command {
 	var setCmd = &cobra.Command{
 		Use: "set [name] [base]",
 		Short: "Set a new or existing API domain",
+		Example: "apix set myapi https://api.example.com",
 		Args: cobra.ExactArgs(2),
 		Run: handlers.SetHandler,
 	}
@@ -47,6 +46,7 @@ func initCmd() *cobra.Command {
 	var getCmd = &cobra.Command{
 		Use: "get [path]",
 		Short: "Send a GET request to the active domain",
+		Example: "apix get /users/123",
 		Args: cobra.MaximumNArgs(2),
 		Run: handlers.GetHandler,
 	}
@@ -55,6 +55,7 @@ func initCmd() *cobra.Command {
 	var useCmd = &cobra.Command{
 		Use: "use [name]",
 		Short: "Sets the active domain to the specified name",
+		Example: "apix use myapi",
 		Args: cobra.MinimumNArgs(1),
 		Run: handlers.UseHandler,
 	}
@@ -63,6 +64,7 @@ func initCmd() *cobra.Command {
 	var removeCmd = &cobra.Command{
 		Use: "remove [name]",
 		Short: "Remove a domain from the config",
+		Example: "apix remove myapi",
 		Args: cobra.MinimumNArgs(1),
 		Run: handlers.RemoveHandler,
 	}
