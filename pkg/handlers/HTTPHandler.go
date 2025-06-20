@@ -8,21 +8,24 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func GetHandler(cmd *cobra.Command, args []string) {
+func HTTPHandler(method string, cmd *cobra.Command, args []string) {
 	path := "/"
+    if len(args) > 0 {
+        path = args[0]
+    }
 
-	if len(args) > 0 {
-		path = args[0]
-	}
+    var body []byte
+    if len(args) > 1 {
+        body = []byte(args[1])
+    }
 
 	domain, err := config.LoadActiveDomain()
-
 	if err != nil {
 		println("Error loading domain:", err)
 	}
 
 	headers := make(map[string]string)
-	res, body, err := client.MakeRequest("GET", domain, path, nil, headers)
+	res, body, err := client.MakeRequest(method, domain, path, body, headers)
 
 	if err != nil {
 		fmt.Println("Error making request:", err)
@@ -32,7 +35,7 @@ func GetHandler(cmd *cobra.Command, args []string) {
 	defer res.Body.Close()
 
 	if len(body) == 0 {
-		fmt.Println("Response body is empty. Headers:")
+		fmt.Printf("Code: %d. Body: empty. Headers:\n", res.StatusCode)
 		for key, values := range res.Header {
 			for _, value := range values {
 				fmt.Printf("%s: %s\n", key, value)

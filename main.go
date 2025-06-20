@@ -1,6 +1,9 @@
 package main
+
 import (
+	"fmt"
 	"os"
+	"strings"
 
 	"github.com/rhydianjenkins/apix/pkg/handlers"
 	"github.com/spf13/cobra"
@@ -41,17 +44,6 @@ func initCmd() *cobra.Command {
 	listCmd.Flags().Bool("verbose", false, "Also list all information about each domain")
 	rootCmd.AddCommand(listCmd)
 
-	// TODO Rhydian more commands...
-	// post, patch, put, etc... may have to think more on the structure of this one?
-	var getCmd = &cobra.Command{
-		Use: "get [path]",
-		Short: "Send a GET request to the active domain",
-		Example: "apix get /users/123",
-		Args: cobra.MaximumNArgs(2),
-		Run: handlers.GetHandler,
-	}
-	rootCmd.AddCommand(getCmd)
-
 	var useCmd = &cobra.Command{
 		Use: "use [name]",
 		Short: "Sets the active domain to the specified name",
@@ -70,5 +62,24 @@ func initCmd() *cobra.Command {
 	}
 	rootCmd.AddCommand(removeCmd)
 
+	rootCmd.AddCommand(createHTTPCommand("GET"))
+	rootCmd.AddCommand(createHTTPCommand("POST"))
+	rootCmd.AddCommand(createHTTPCommand("PUT"))
+	rootCmd.AddCommand(createHTTPCommand("PATCH"))
+	rootCmd.AddCommand(createHTTPCommand("DELETE"))
+
+
 	return rootCmd
+}
+
+func createHTTPCommand(method string) *cobra.Command {
+    return &cobra.Command{
+		Use: fmt.Sprintf("%s [path] [body]", strings.ToLower(method)),
+        Short: fmt.Sprintf("Send a %s request to the active domain", method),
+        Example: fmt.Sprintf("apix %s /users/123", strings.ToLower(method)),
+        Args: cobra.RangeArgs(1, 2),
+        Run: func(cmd *cobra.Command, args []string) {
+            handlers.HTTPHandler(method, cmd, args)
+        },
+    }
 }
