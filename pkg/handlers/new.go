@@ -5,7 +5,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func SetHandler(cmd *cobra.Command, args []string) {
+func NewHandler(cmd *cobra.Command, args []string) {
 	name := args[0]
 	base := args[1]
 	user, _ := cmd.Flags().GetString("user")
@@ -36,4 +36,6 @@ func SetHandler(cmd *cobra.Command, args []string) {
 	}
 
 	config.SetDomain(domain)
+
+	println("New domain added and active.")
 }

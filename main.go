@@ -24,16 +24,16 @@ func initCmd() *cobra.Command {
 		},
 	}
 
-	var setCmd = &cobra.Command{
-		Use: "set [name] [base]",
-		Short: "Set a new or existing API domain",
-		Example: "apix set myapi https://api.example.com",
+	var newCmd = &cobra.Command{
+		Use: "new [name] [base]",
+		Short: "create a new API domain",
+		Example: "apix new myapi https://api.example.com --user foo --pass bar",
 		Args: cobra.ExactArgs(2),
-		Run: handlers.SetHandler,
+		Run: handlers.NewHandler,
 	}
-	setCmd.Flags().String("user", "", "basic auth username to use for this domain")
-	setCmd.Flags().String("pass", "", "basic auth password to use for this domain")
-	rootCmd.AddCommand(setCmd)
+	newCmd.Flags().String("user", "", "basic auth username to use for this domain")
+	newCmd.Flags().String("pass", "", "basic auth password to use for this domain")
+	rootCmd.AddCommand(newCmd)
 
 	var listCmd = &cobra.Command{
 		Use: "list",
