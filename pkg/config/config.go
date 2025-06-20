@@ -102,8 +102,17 @@ func RemoveDomain(nameToRemove string) error {
 		return fmt.Errorf("error reading config: %w", err)
 	}
 
-	// TODO Rhydian this doesn't seem to remove the key?
-	viper.Set("domains."+nameToRemove, nil)
+	if !viper.IsSet("domains."+nameToRemove) {
+		return fmt.Errorf("diomain %q does not exist in your list of domains. See domains with `apix list`\n", nameToRemove)
+	}
+
+	if viper.GetString("active") == nameToRemove {
+		return fmt.Errorf("Unable to remove %q as it is currently your active domain.", nameToRemove)
+	}
+
+	domainsMap := viper.GetStringMap("domains")
+	delete(domainsMap, nameToRemove)
+	viper.Set("domains", domainsMap)
 
 	if err := viper.WriteConfig(); err != nil {
 		return fmt.Errorf("error writing config: %w", err)
