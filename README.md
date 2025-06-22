@@ -12,11 +12,17 @@
 - Make GET requests to API endpoints
 - Pretty JSON output for responses
 
-## 📦 Installation
+## 📦 Getting Started
 
 ```sh
 # from source
-go build -o apix && mv apix /usr/local/bin
+git clone https://github.com/rhydianjenkins/apix
+cd apix
+go build -o apix
+./apix
+
+# or with nix
+nix run
 ```
 
 ## 🚀 Usage
