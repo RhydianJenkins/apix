@@ -7,10 +7,9 @@
 ## ✨ Features
 
 - Add and manage multiple API domains
-- Store credentials securely in a local config
+- Store credentials in a local yaml config
 - Switch between domains easily
-- Make GET requests to API endpoints
-- Pretty JSON output for responses
+- Make requests to your stored API endpoints
 
 ## 📦 Getting Started
 
