@@ -15,7 +15,7 @@ func makeRequest(
 	domain *config.Domain,
 	reqBody *[]byte,
 	headers map[string]string,
-) (*http.Response, *[]byte, error) {
+) (*http.Response, error) {
 	client := &http.Client{
 		Timeout: 30 * time.Second,
 	}
@@ -32,7 +32,7 @@ func makeRequest(
 	}
 
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create request: %w", err)
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	if domain != nil && domain.User != "" && domain.Pass != "" {
@@ -47,16 +47,10 @@ func makeRequest(
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to make request: %w", err)
+		return nil, fmt.Errorf("failed to make request: %w", err)
 	}
 
-	responseBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		resp.Body.Close()
-		return nil, nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	return resp, &responseBody, nil
+	return resp, nil
 }
 
 func HTTPHandler(
@@ -64,11 +58,16 @@ func HTTPHandler(
 	domain *config.Domain,
 	reqBody *[]byte,
 	headers map[string]string,
-) (*[]byte, error) {
-	res, resBody, err := makeRequest(method, domain, reqBody, headers)
-
+) ([]byte, error) {
+	res, err := makeRequest(method, domain, reqBody, headers)
 	if err != nil {
 		fmt.Printf("Error making %s request: %v\n", method, err)
+	}
+
+	resBody, err := io.ReadAll(res.Body)
+
+	if err != nil {
+		fmt.Printf("Error reading response: %v\n", err)
 	}
 
 	defer res.Body.Close()
@@ -77,8 +76,7 @@ func HTTPHandler(
 		return nil, err
 	}
 
-	if len(*resBody) == 0 {
-		fmt.Printf("Code: %d. Body: empty. Headers:\n", res.StatusCode)
+	if len(resBody) == 0 {
 		for key, values := range res.Header {
 			for _, value := range values {
 				fmt.Printf("%s: %s\n", key, value)
@@ -94,8 +92,8 @@ func setHeaders(req *http.Request) {
 		req.Header.Set("Content-Type", "application/json")
 	}
 
-	if req.Header.Get("accept") == "" {
-		req.Header.Set("Accept", "*/*")
+	if req.Header.Get("Accept") == "" {
+		req.Header.Set("Accept", "application/json")
 	}
 
 	if req.Header.Get("User-Agent") == "" {

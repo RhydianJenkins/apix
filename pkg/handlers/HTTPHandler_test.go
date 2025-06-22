@@ -72,7 +72,7 @@ func TestPost(t *testing.T) {
 		return
 	}
 
-	if string(*body) != `{"id": 123}` {
-		t.Errorf("Unexpected body contents, got %q", string(*body))
+	if string(body) != `{"id": 123}` {
+		t.Errorf("Unexpected body contents, got %q", string(body))
 	}
 }

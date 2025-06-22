@@ -91,7 +91,7 @@ func createHTTPCommand(method string) *cobra.Command {
 				fmt.Fprintf(os.Stderr, "Error making %s request: %v\n", method, err)
 			}
 
-			fmt.Printf("%s", string(*body))
+			fmt.Printf("%s", string(body))
         },
     }
 }
