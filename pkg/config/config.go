@@ -40,11 +40,11 @@ func SetActiveName(activeName string) (error) {
 	return nil
 }
 
-func LoadActiveDomain() (*Domain, error) {
+func LoadActiveDomain() (*Domain) {
 	cfg := LoadConfig()
 	domain := cfg.Domains[cfg.Active]
 
-	return &domain, nil
+	return &domain
 }
 
 func LoadDomain(name string) (*Domain, error) {

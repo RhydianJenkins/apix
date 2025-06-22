@@ -13,6 +13,7 @@ import (
 func makeRequest(
 	method string,
 	domain *config.Domain,
+	path string,
 	reqBody *[]byte,
 	headers map[string]string,
 ) (*http.Response, error) {
@@ -23,7 +24,7 @@ func makeRequest(
 	var req *http.Request
 	var err error
 
-	url := domain.Base
+	url := domain.Base + path
 
 	if reqBody != nil {
 		req, err = http.NewRequest(method, url, bytes.NewBuffer(*reqBody))
@@ -56,10 +57,11 @@ func makeRequest(
 func HTTPHandler(
 	method string,
 	domain *config.Domain,
+	path string,
 	reqBody *[]byte,
 	headers map[string]string,
 ) ([]byte, error) {
-	res, err := makeRequest(method, domain, reqBody, headers)
+	res, err := makeRequest(method, domain, path, reqBody, headers)
 	if err != nil {
 		fmt.Printf("Error making %s request: %v\n", method, err)
 	}

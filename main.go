@@ -79,12 +79,12 @@ func createHTTPCommand(method string) *cobra.Command {
         Example: fmt.Sprintf("apix %s /users/123", strings.ToLower(method)),
         Args: cobra.RangeArgs(1, 2),
         Run: func(cmd *cobra.Command, args []string) {
-			domain, _ := config.LoadActiveDomain()
 			body, err := handlers.HTTPHandler(
 				method,
-				domain,
-				nil,
-				nil,
+				config.LoadActiveDomain(),
+				args[0],
+				nil, // TODO Rhydian take from stdin?
+				nil, // TODO Rhydian how to specify this?
 			)
 
 			if err != nil {

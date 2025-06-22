@@ -39,6 +39,12 @@ func makeHandler (t *testing.T) http.HandlerFunc {
 				req.Header.Get("Accept"),
 			)
 		}
+		if req.RequestURI != "/test" {
+			t.Errorf(
+				"Wrong request URI. Expected /test but got %q",
+				req.RequestURI,
+			)
+		}
 
 		writer.WriteHeader(mockResponse.StatusCode)
 		for key, value := range mockResponse.Headers {
@@ -61,7 +67,9 @@ func TestPost(t *testing.T) {
 		User: "",
 	}
 
-	body, err := HTTPHandler("POST", domain, nil, nil)
+	path := "/test"
+
+	body, err := HTTPHandler("POST", domain, path, nil, nil)
 
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
