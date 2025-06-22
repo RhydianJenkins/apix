@@ -30,11 +30,15 @@ Usage:
 
 Available Commands:
   completion  Generate the autocompletion script for the specified shell
+  delete      Send a DELETE request to the active domain
   get         Send a GET request to the active domain
   help        Help about any command
   list        List all domain names saved in config
+  new         create a new API domain
+  patch       Send a PATCH request to the active domain
+  post        Send a POST request to the active domain
+  put         Send a PUT request to the active domain
   remove      Remove a domain from the config
-  set         Set a new or existing API domain
   use         Sets the active domain to the specified name
 
 Flags:
