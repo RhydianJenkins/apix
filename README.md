@@ -15,9 +15,10 @@
 ## 📦 Getting Started
 
 ```sh
-# from source
-git clone https://github.com/rhydianjenkins/apix
-cd apix
+# fetch the project
+git clone https://github.com/rhydianjenkins/apix && cd apix
+
+# build from source
 go build -o apix
 ./apix
 
