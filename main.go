@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/rhydianjenkins/apix/pkg/config"
 	"github.com/rhydianjenkins/apix/pkg/handlers"
 	"github.com/spf13/cobra"
 )
@@ -68,7 +69,6 @@ func initCmd() *cobra.Command {
 	rootCmd.AddCommand(createHTTPCommand("PATCH"))
 	rootCmd.AddCommand(createHTTPCommand("DELETE"))
 
-
 	return rootCmd
 }
 
@@ -79,7 +79,19 @@ func createHTTPCommand(method string) *cobra.Command {
         Example: fmt.Sprintf("apix %s /users/123", strings.ToLower(method)),
         Args: cobra.RangeArgs(1, 2),
         Run: func(cmd *cobra.Command, args []string) {
-            handlers.HTTPHandler(method, cmd, args)
+			domain, _ := config.LoadActiveDomain()
+			body, err := handlers.HTTPHandler(
+				method,
+				domain,
+				nil,
+				nil,
+			)
+
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error making %s request: %v\n", method, err)
+			}
+
+			fmt.Printf("%s", string(*body))
         },
     }
 }
