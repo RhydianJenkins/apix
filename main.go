@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -79,11 +80,13 @@ func createHTTPCommand(method string) *cobra.Command {
         Example: fmt.Sprintf("apix %s /users/123", strings.ToLower(method)),
         Args: cobra.RangeArgs(1, 2),
         Run: func(cmd *cobra.Command, args []string) {
+			input, _ := getStdIn()
+
 			body, err := handlers.HTTPHandler(
 				method,
 				config.LoadActiveDomain(),
 				args[0],
-				nil, // TODO Rhydian take from stdin?
+				input,
 				nil, // TODO Rhydian how to specify this?
 			)
 
@@ -94,4 +97,19 @@ func createHTTPCommand(method string) *cobra.Command {
 			fmt.Printf("%s", string(body))
         },
     }
+}
+
+func getStdIn() (*[]byte, error) {
+	stat, err := os.Stdin.Stat()
+
+	if err != nil {
+		return nil, err
+	}
+
+	if (stat.Mode() & os.ModeCharDevice) == 0 {
+		input, err := io.ReadAll(os.Stdin)
+		return &input, err
+	}
+
+	return nil, nil
 }
