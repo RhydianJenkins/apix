@@ -79,7 +79,7 @@ apix completion zsh > ~/.local/zsh-completions/_apix
 
 `apix` supports `json` and `yaml` OAS, as well as remote (http) hosted and local hosted specs.
 
-You can specifiy which spec belongs to which domain in config:
+You can specify which spec belongs to which domain in config:
 
 ```sh
 apix new myapi https://api.example.com --oas "https://api.example.domain/myOAS.json"
