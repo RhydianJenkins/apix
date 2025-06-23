@@ -20,6 +20,7 @@ func main() {
 
 func initCmd() *cobra.Command {
 	var rootCmd = &cobra.Command{
+		Use: "apix",
 		Short: "API eXecuter (APIX) is a CLI tool to manage API domains and make requests",
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.Help()
@@ -28,7 +29,7 @@ func initCmd() *cobra.Command {
 
 	var newCmd = &cobra.Command{
 		Use: "new [name] [base]",
-		Short: "create a new API domain",
+		Short: "Create a new API domain",
 		Example: "apix new myapi https://api.example.com --user foo --pass bar",
 		Args: cobra.ExactArgs(2),
 		Run: handlers.NewHandler,
@@ -52,6 +53,11 @@ func initCmd() *cobra.Command {
 		Example: "apix use myapi",
 		Args: cobra.MinimumNArgs(1),
 		Run: handlers.UseHandler,
+		// TODO RHydian complete with a list of available domains in config
+		// ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		// 	suggestions := []string{"test1", "test2", "test3"}
+		// 	return suggestions, cobra.ShellCompDirectiveNoFileComp
+		// },
 	}
 	rootCmd.AddCommand(useCmd)
 
