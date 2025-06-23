@@ -8,6 +8,7 @@
 
 - Add and manage multiple API domains
 - Store credentials in a local yaml config
+- OAS support and endpoint completion
 - Switch between domains easily
 - Make requests to your stored API endpoints
 
@@ -17,11 +18,10 @@
 # fetch the project
 git clone https://github.com/rhydianjenkins/apix && cd apix
 
-# build from source
-go build -o apix
-./apix
+# then build from source
+go build -o apix && ./apix
 
-# or with nix
+# or run with nix
 nix run
 ```
 
@@ -72,4 +72,21 @@ Then generate the completion script:
 # if you're using zsh...
 apix completion zsh > ~/.local/zsh-completions/_apix
 ```
+</details>
+
+<details>
+<summary><strong>How do I get it working with my OAS?</strong></summary>
+
+TODO Rhydian
+
+`apix` supports `json` and `yaml` OAS, as well as remote (http) hosted and local hosted specs.
+
+You can specifiy which spec belongs to which domain in config:
+
+```sh
+apix new myapi https://api.example.domain --oas "https://api.example.domain/myOAS.json"
+# ... or
+apix new myapi https://api.example.domain --oas "/local/path/to/myOAS.json"
+```
+
 </details>
