@@ -17,7 +17,7 @@
                     pname = "apix";
                     version = "1.0.0";
                     src = ./.;
-                    vendorHash = "sha256-4/w2pzqPgy+vsVaq4gDhRLsVlrm1WAj2LEgNiUcp1vk=";
+                    vendorHash = "sha256-QFHmy/lYqPzhLxV3Cvi7p4AHtj+aiO0zggHCBNa3A28=";
                 };
 
                 defaultPackage = self.packages.${system}.apix;
