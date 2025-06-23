@@ -31,8 +31,8 @@ nix run
 API eXecuter (APIX) is a CLI tool to manage API domains and make requests
 
 Usage:
-   [flags]
-   [command]
+  apix [command] [flags]
+  apix [command]
 
 Available Commands:
   completion  Generate the autocompletion script for the specified shell
@@ -40,17 +40,17 @@ Available Commands:
   get         Send a GET request to the active domain
   help        Help about any command
   list        List all domain names saved in config
-  new         create a new API domain
+  new         Create a new API domain
   patch       Send a PATCH request to the active domain
   post        Send a POST request to the active domain
   put         Send a PUT request to the active domain
   remove      Remove a domain from the config
-  use         Sets the active domain to the specified name
+  switch      Sets the active domain to the specified name
 
 Flags:
-  -h, --help   help for this command
+  -h, --help   help for apix
 
-Use " [command] --help" for more information about a command.
+Use "apix [command] --help" for more information about a command.
 ```
 
 ## ❓ FAQ
