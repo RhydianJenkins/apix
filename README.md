@@ -52,3 +52,24 @@ Flags:
 
 Use " [command] --help" for more information about a command.
 ```
+
+## ❓ FAQ
+
+<details>
+<summary><strong>How do I enable shell completion?</strong></summary>
+
+If you haven't already, add your completion directory to `fpath`:
+
+```sh
+# in .zshrc, or wherever
+fpath=($HOME/.local/zsh-completions $fpath)
+compinit
+```
+
+Then generate the completion script:
+
+```sh
+# if you're using zsh...
+apix completion zsh >> ~/.local/zsh-completions/_apix
+```
+</details>
