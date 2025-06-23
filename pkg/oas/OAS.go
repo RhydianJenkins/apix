@@ -73,6 +73,13 @@ func fetchAndParseSpec(specSource string) ([]string, error) {
 }
 
 func HasValidOpenAPISpec(d *config.Domain) bool {
+    if d.OpenAPISpecPath == "" {
+        return false
+    }
+
+    if strings.HasPrefix(d.OpenAPISpecPath, "http://") || strings.HasPrefix(d.OpenAPISpecPath, "https://") {
+        return true
+    }
 
     _, err := os.Stat(d.OpenAPISpecPath)
     return err == nil
