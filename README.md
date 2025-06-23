@@ -75,18 +75,18 @@ apix completion zsh > ~/.local/zsh-completions/_apix
 </details>
 
 <details>
-<summary><strong>How do I get it working with my OAS?</strong></summary>
-
-TODO Rhydian
+<summary><strong>How do I get it working with OAS?</strong></summary>
 
 `apix` supports `json` and `yaml` OAS, as well as remote (http) hosted and local hosted specs.
 
 You can specifiy which spec belongs to which domain in config:
 
 ```sh
-apix new myapi https://api.example.domain --oas "https://api.example.domain/myOAS.json"
+apix new myapi https://api.example.com --oas "https://api.example.domain/myOAS.json"
 # ... or
-apix new myapi https://api.example.domain --oas "/local/path/to/myOAS.json"
+apix new myapi https://api.example.com --oas "/local/path/to/myOAS.yaml"
 ```
+
+Then, assuming you've set up completions, you should be able to <tab> complete your endpoints.
 
 </details>
