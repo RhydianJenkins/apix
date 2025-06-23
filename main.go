@@ -89,9 +89,9 @@ func initCmd() *cobra.Command {
 
 func createHTTPCommand(method string) *cobra.Command {
     return &cobra.Command{
-		Use: fmt.Sprintf("%s [path] [body]", strings.ToLower(method)),
+		Use: fmt.Sprintf("%s [path]", strings.ToLower(method)),
         Short: fmt.Sprintf("Send a %s request to the active domain", method),
-        Example: fmt.Sprintf("apix %s /users/123", strings.ToLower(method)),
+        Example: fmt.Sprintf("apix %s /users/123\ncat req_body.json | apix %s /users/123", strings.ToLower(method), strings.ToLower(method)),
         Args: cobra.RangeArgs(1, 2),
         Run: func(cmd *cobra.Command, args []string) {
 			input, _ := getStdIn()

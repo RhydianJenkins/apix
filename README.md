@@ -56,6 +56,17 @@ Use "apix [command] --help" for more information about a command.
 ## ❓ FAQ
 
 <details>
+<summary><strong>How do I send a request body?</strong></summary>
+
+`apix` aims to make use of pipelines as much as possible and takes the request body from `stdin`.
+
+```sh
+# Make a POST request to {base}/users with `my_req_body.json` as a body
+cat my_req_body.json | apix post /users
+```
+</details>
+
+<details>
 <summary><strong>How do I enable shell completion?</strong></summary>
 
 If you haven't already, add your completion directory to `fpath`:
