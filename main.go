@@ -20,7 +20,7 @@ func main() {
 
 func initCmd() *cobra.Command {
 	var rootCmd = &cobra.Command{
-		Use: "apix",
+		Use: "apix [command]",
 		Short: "API eXecuter (APIX) is a CLI tool to manage API domains and make requests",
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.Help()
@@ -47,26 +47,23 @@ func initCmd() *cobra.Command {
 	listCmd.Flags().Bool("verbose", false, "Also list all information about each domain")
 	rootCmd.AddCommand(listCmd)
 
-	var useCmd = &cobra.Command{
-		Use: "use [name]",
+	var switchCmd = &cobra.Command{
+		Use: "switch [domain]",
 		Short: "Sets the active domain to the specified name",
-		Example: "apix use myapi",
-		Args: cobra.MinimumNArgs(1),
-		Run: handlers.UseHandler,
-		// TODO RHydian complete with a list of available domains in config
-		// ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		// 	suggestions := []string{"test1", "test2", "test3"}
-		// 	return suggestions, cobra.ShellCompDirectiveNoFileComp
-		// },
+		Example: "apix switch myapi",
+		Args: cobra.OnlyValidArgs,
+		Run: handlers.SwitchHandler,
+		ValidArgsFunction: getDomainNames,
 	}
-	rootCmd.AddCommand(useCmd)
+	rootCmd.AddCommand(switchCmd)
 
 	var removeCmd = &cobra.Command{
-		Use: "remove [name]",
+		Use: "remove [domain]",
 		Short: "Remove a domain from the config",
 		Example: "apix remove myapi",
-		Args: cobra.MinimumNArgs(1),
+		Args: cobra.OnlyValidArgs,
 		Run: handlers.RemoveHandler,
+		ValidArgsFunction: getDomainNames,
 	}
 	rootCmd.AddCommand(removeCmd)
 
@@ -118,4 +115,9 @@ func getStdIn() (*[]byte, error) {
 	}
 
 	return nil, nil
+}
+
+func getDomainNames(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	domains := config.GetDomainNames()
+	return domains, cobra.ShellCompDirectiveNoFileComp
 }

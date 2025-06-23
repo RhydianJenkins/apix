@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func UseHandler(cmd *cobra.Command, args []string) {
+func SwitchHandler(cmd *cobra.Command, args []string) {
 	newActiveDomain := args[0]
 
 	err := config.SetActiveName(newActiveDomain)
@@ -16,5 +16,5 @@ func UseHandler(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	fmt.Printf("Using domain '%s'.\n", newActiveDomain)
+	fmt.Printf("Switched to domain '%s'.\n", newActiveDomain)
 }

@@ -120,3 +120,13 @@ func RemoveDomain(nameToRemove string) error {
 
 	return nil
 }
+
+func GetDomainNames() []string {
+	cfg := LoadConfig()
+	domainNames := make([]string, 0, len(cfg.Domains))
+	for k := range cfg.Domains {
+		domainNames = append(domainNames, k)
+	}
+
+	return domainNames
+}

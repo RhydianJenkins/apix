@@ -70,6 +70,6 @@ Then generate the completion script:
 
 ```sh
 # if you're using zsh...
-apix completion zsh >> ~/.local/zsh-completions/_apix
+apix completion zsh > ~/.local/zsh-completions/_apix
 ```
 </details>
