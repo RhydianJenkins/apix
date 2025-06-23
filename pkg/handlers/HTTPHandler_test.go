@@ -8,14 +8,14 @@ import (
 	"github.com/rhydianjenkins/apix/pkg/config"
 )
 
-type MockResponse struct {
+type mockResponse struct {
     StatusCode int
     Body string
     Headers map[string]string
 }
 
 func makeHandler (t *testing.T) http.HandlerFunc {
-	mockResponse := MockResponse{
+	mockResponse := mockResponse{
         StatusCode: http.StatusCreated,
         Body: `{"id": 123}`,
         Headers: map[string]string{
