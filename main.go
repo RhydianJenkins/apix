@@ -8,6 +8,7 @@ import (
 
 	"github.com/rhydianjenkins/apix/pkg/config"
 	"github.com/rhydianjenkins/apix/pkg/handlers"
+	"github.com/rhydianjenkins/apix/pkg/oas"
 	"github.com/spf13/cobra"
 )
 
@@ -36,6 +37,7 @@ func initCmd() *cobra.Command {
 	}
 	newCmd.Flags().String("user", "", "basic auth username to use for this domain")
 	newCmd.Flags().String("pass", "", "basic auth password to use for this domain")
+	newCmd.Flags().String("oas", "", "path to the oas spec for this endpoint")
 	rootCmd.AddCommand(newCmd)
 
 	var editCmd = &cobra.Command{
@@ -96,7 +98,7 @@ func createHTTPCommand(method string) *cobra.Command {
 
 			body, err := handlers.HTTPHandler(
 				method,
-				config.LoadActiveDomain(),
+				config.GetActiveDomain(),
 				args[0],
 				input,
 				nil, // TODO Rhydian how to specify this?
@@ -108,6 +110,22 @@ func createHTTPCommand(method string) *cobra.Command {
 
 			fmt.Printf("%s", string(body))
         },
+		ValidArgsFunction: func (cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+			activeDomain := config.GetActiveDomain()
+
+			if !oas.HasValidOpenAPISpec(activeDomain) {
+				return nil, cobra.ShellCompDirectiveNoFileComp
+			}
+
+			oasPath := activeDomain.OpenAPISpecPath
+			endpoints, err := oas.GetEndpointsValidArgs(oasPath)
+
+			if err != nil {
+				return nil, cobra.ShellCompDirectiveNoFileComp
+			}
+
+			return endpoints, cobra.ShellCompDirectiveNoFileComp
+		},
     }
 }
 
