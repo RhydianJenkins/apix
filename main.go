@@ -48,7 +48,7 @@ func initCmd() *cobra.Command {
 	rootCmd.AddCommand(listCmd)
 
 	var switchCmd = &cobra.Command{
-		Use: "switch [domain]",
+		Use: "switch [name]",
 		Short: "Sets the active domain to the specified name",
 		Example: "apix switch myapi",
 		Args: cobra.OnlyValidArgs,
@@ -58,7 +58,7 @@ func initCmd() *cobra.Command {
 	rootCmd.AddCommand(switchCmd)
 
 	var removeCmd = &cobra.Command{
-		Use: "remove [domain]",
+		Use: "remove [name]",
 		Short: "Remove a domain from the config",
 		Example: "apix remove myapi",
 		Args: cobra.OnlyValidArgs,
