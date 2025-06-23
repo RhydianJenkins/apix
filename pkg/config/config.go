@@ -29,9 +29,8 @@ func SetActiveName(activeName string) (error) {
 		return fmt.Errorf("Active domain cannot be empty\n")
 	}
 
-	// TODO viper.InConfig exists...
 	if _, exists := cfg.Domains[activeName]; !exists {
-		return fmt.Errorf("Domain %q does not exist.\nUse 'list' command to show available domains or 'set' to add new ones.\n", activeName)
+		return fmt.Errorf("Domain %q does not exist.\nUse `apix list` to show available domains or `apix new` to add new ones.\n", activeName)
 	}
 
 	viper.Set("active", activeName)
