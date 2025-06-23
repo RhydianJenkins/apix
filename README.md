@@ -87,6 +87,6 @@ apix new myapi https://api.example.com --oas "https://api.example.domain/myOAS.j
 apix new myapi https://api.example.com --oas "/local/path/to/myOAS.yaml"
 ```
 
-Then, assuming you've set up completions, you should be able to <tab> complete your endpoints.
+Then, assuming you've set up completions, you should be able to `<tab>` complete your endpoints.
 
 </details>
