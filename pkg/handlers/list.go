@@ -24,6 +24,7 @@ func ListHandler(cmd *cobra.Command, args []string) {
 			fmt.Printf("\tBase: %s\n", domain.Base)
 			fmt.Printf("\tUser: %s\n", domain.User)
 			fmt.Printf("\tPass: %s\n", domain.Pass)
+			fmt.Printf("\tOAS: %s\n", domain.OpenAPISpecPath)
 		}
 	}
 }
