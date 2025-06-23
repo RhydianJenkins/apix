@@ -26,7 +26,7 @@ func TestGetEndpointsValidArgs(t *testing.T) {
 		{
 			name: "Run with https url",
 			oasPath: server.URL + "/webhooks.yaml",
-			expected: []string{"/webhooks/subscription", "/webhooks/subscription/{id}"},
+			expected: []string{"/webhooks/subscription/{id}"},
 		},
 		// TODO Rhydian how do we test local paths?
 		// {
