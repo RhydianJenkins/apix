@@ -37,10 +37,7 @@ func GetEndpointsValidArgs(method, specSource string) ([]string, error) {
 	v3Model, errors := oasDocument.BuildV3Model()
 
 	if len(errors) > 0 {
-		for i := range errors {
-			fmt.Printf("error: %e\n", errors[i])
-		}
-		panic(fmt.Sprintf("cannot create v3 model from document: %d errors reported", len(errors)))
+		return nil, fmt.Errorf("failed to build OpenAPI v3 model: %v", errors)
 	}
 
 	endpoints := []string{}
