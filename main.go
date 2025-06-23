@@ -118,7 +118,7 @@ func createHTTPCommand(method string) *cobra.Command {
 			}
 
 			oasPath := activeDomain.OpenAPISpecPath
-			endpoints, err := oas.GetEndpointsValidArgs(oasPath)
+			endpoints, err := oas.GetEndpointsValidArgs(method, oasPath)
 
 			if err != nil {
 				return nil, cobra.ShellCompDirectiveNoFileComp
