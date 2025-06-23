@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-var cfgPath = filepath.Join(os.Getenv("HOME"), ".apix.yaml")
+var CfgPath = filepath.Join(os.Getenv("HOME"), ".apix.yaml")
 
 type Domain struct {
 	Base string `yaml:"base"`
@@ -59,11 +59,11 @@ func LoadDomain(name string) (*Domain, error) {
 }
 
 func LoadConfig() *config {
-	viper.SetConfigFile(cfgPath)
+	viper.SetConfigFile(CfgPath)
 
 	if err := viper.ReadInConfig(); err != nil {
-		if _, statErr := os.Stat(cfgPath); os.IsNotExist(statErr) {
-			viper.SafeWriteConfigAs(cfgPath)
+		if _, statErr := os.Stat(CfgPath); os.IsNotExist(statErr) {
+			viper.SafeWriteConfigAs(CfgPath)
 		} else {
 			println("Error reading config file:", err)
 		}
@@ -79,11 +79,11 @@ func LoadConfig() *config {
 }
 
 func SetDomain(domain *Domain) {
-	viper.SetConfigFile(cfgPath)
+	viper.SetConfigFile(CfgPath)
 
     if err := viper.MergeInConfig(); err != nil {
-        if _, statErr := os.Stat(cfgPath); os.IsNotExist(statErr) {
-            viper.SafeWriteConfigAs(cfgPath)
+        if _, statErr := os.Stat(CfgPath); os.IsNotExist(statErr) {
+            viper.SafeWriteConfigAs(CfgPath)
         } else {
 			println("Error reading config file:", err)
         }
@@ -95,7 +95,7 @@ func SetDomain(domain *Domain) {
 }
 
 func RemoveDomain(nameToRemove string) error {
-	viper.SetConfigFile(cfgPath)
+	viper.SetConfigFile(CfgPath)
 
 	if err := viper.ReadInConfig(); err != nil {
 		return fmt.Errorf("error reading config: %w", err)

@@ -38,6 +38,15 @@ func initCmd() *cobra.Command {
 	newCmd.Flags().String("pass", "", "basic auth password to use for this domain")
 	rootCmd.AddCommand(newCmd)
 
+	var editCmd = &cobra.Command{
+		Use: "edit",
+		Short: "Open config in your $EDITOR",
+		Args: cobra.ExactArgs(0),
+		Run: handlers.EditHandler,
+	}
+	editCmd.Flags().Bool("verbose", false, "")
+	rootCmd.AddCommand(editCmd)
+
 	var listCmd = &cobra.Command{
 		Use: "list",
 		Short: "List all domain names saved in config",
