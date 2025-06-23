@@ -17,18 +17,9 @@ type OpenAPISpec struct {
 	Paths map[string]any `json:"paths" yaml:"paths"`
 }
 
-func GetEndpointsValidArgs(oasPath string) ([]string, error) {
-	endpoints, err := fetchAndParseSpec(oasPath)
-
-	if err != nil {
-		fmt.Printf("Error fetching or parsing OpenAPI spec: %s\n", err)
-		return nil, err
-	}
-
-	return endpoints, nil
-}
-
-func fetchAndParseSpec(specSource string) ([]string, error) {
+// TODO Rhydian use something like this to parse OAS...
+// https://pb33f.io/libopenapi/openapi/
+func GetEndpointsValidArgs(specSource string) ([]string, error) {
 	var data []byte
 	var err error
 
