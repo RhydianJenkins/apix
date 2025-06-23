@@ -11,18 +11,19 @@ import (
 var CfgPath = filepath.Join(os.Getenv("HOME"), ".apix.yaml")
 
 type Domain struct {
-	Base string `yaml:"base"`
-	Name string `yaml:"name"`
-	Pass string `yaml:"pass"`
-	User string `yaml:"user"`
+	Base            string `yaml:"base"`
+	Name            string `yaml:"name"`
+	Pass            string `yaml:"pass,omitempty"`
+	User            string `yaml:"user,omitempty"`
+	OpenAPISpecPath string `yaml:"openapispecpath,omitempty"`
 }
 
 type config struct {
-	Active  string `mapstructure:"active"`
+	Active  string            `mapstructure:"active"`
 	Domains map[string]Domain `mapstructure:"domains"`
 }
 
-func SetActiveName(activeName string) (error) {
+func SetActiveName(activeName string) error {
 	cfg := LoadConfig()
 
 	if activeName == "" {
@@ -39,7 +40,7 @@ func SetActiveName(activeName string) (error) {
 	return nil
 }
 
-func LoadActiveDomain() (*Domain) {
+func GetActiveDomain() *Domain {
 	cfg := LoadConfig()
 	domain := cfg.Domains[cfg.Active]
 
@@ -81,13 +82,13 @@ func LoadConfig() *config {
 func SetDomain(domain *Domain) {
 	viper.SetConfigFile(CfgPath)
 
-    if err := viper.MergeInConfig(); err != nil {
-        if _, statErr := os.Stat(CfgPath); os.IsNotExist(statErr) {
-            viper.SafeWriteConfigAs(CfgPath)
-        } else {
+	if err := viper.MergeInConfig(); err != nil {
+		if _, statErr := os.Stat(CfgPath); os.IsNotExist(statErr) {
+			viper.SafeWriteConfigAs(CfgPath)
+		} else {
 			println("Error reading config file:", err)
-        }
-    }
+		}
+	}
 
 	viper.Set("domains."+domain.Name, domain)
 	viper.Set("active", domain.Name)
@@ -101,7 +102,7 @@ func RemoveDomain(nameToRemove string) error {
 		return fmt.Errorf("error reading config: %w", err)
 	}
 
-	if !viper.IsSet("domains."+nameToRemove) {
+	if !viper.IsSet("domains." + nameToRemove) {
 		return fmt.Errorf("Domain %q does not exist in your list of domains. See domains with `apix list`\n", nameToRemove)
 	}
 
