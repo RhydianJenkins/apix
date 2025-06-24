@@ -1,8 +1,8 @@
 # APIX (API eXecuter)
 
-⚠️ **Warning: APIX is in active development.**
+**apix** is a CLI HTTP client that manages requests across multiple API environments.
 
-**apix** is a lightweight CLI tool to manage and interact with multiple API domains. It supports user/password auth, domain switching, and prettified HTTP responses—all configured via a simple local YAML file.
+It handles authentication, domain switching, and [OpenAPI Specification (OAS)](https://swagger.io/specification/) integration with a simple YAML config file.
 
 ## ✨ Features
 
