@@ -6,11 +6,10 @@
 
 ## ✨ Features
 
-- Add and manage multiple API domains
-- Store credentials in a local yaml config
-- OAS support (openapi 3+) and endpoint completion
-- Switch between domains easily
-- Make requests to your stored API endpoints
+- Manage API domains
+- Store credentials in `yaml`
+- OAS support
+- Endpoint `<tab>` completions
 
 ## 📦 Getting Started
 
