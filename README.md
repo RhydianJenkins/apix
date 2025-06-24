@@ -15,6 +15,13 @@
 ## 📦 Getting Started
 
 ```sh
+go install github.com/rhydianjenkins/apix@latest
+```
+
+<details>
+<summary>Want to <strong>build from source instead?</strong></summary>
+
+```sh
 # fetch the project
 git clone https://github.com/rhydianjenkins/apix && cd apix
 
@@ -24,6 +31,8 @@ go build -o apix && ./apix
 # or run with nix
 nix run
 ```
+
+</details>
 
 ## 🚀 Usage
 
