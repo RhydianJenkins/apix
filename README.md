@@ -1,6 +1,6 @@
-# apix (API eXecuter)
+# APIX (API eXecuter)
 
-⚠️ **Warning: apix is in active development.**
+⚠️ **Warning: APIX is in active development.**
 
 **apix** is a lightweight CLI tool to manage and interact with multiple API domains. It supports user/password auth, domain switching, and prettified HTTP responses—all configured via a simple local YAML file.
 
@@ -37,6 +37,7 @@ Usage:
 Available Commands:
   completion  Generate the autocompletion script for the specified shell
   delete      Send a DELETE request to the active domain
+  edit        Open config in your $EDITOR
   get         Send a GET request to the active domain
   help        Help about any command
   list        List all domain names saved in config
@@ -88,7 +89,11 @@ apix completion zsh > ~/.local/zsh-completions/_apix
 <details>
 <summary><strong>How do I get it working with OAS?</strong></summary>
 
-`apix` supports `json` and `yaml` OAS, as well as remote (http) hosted and local hosted specs.
+`APIX` can do:
+
+- `json` and `yaml` spec formats
+- openapi versions `3.0.0` and `3.1.0`
+- remote and local specs
 
 You can specify which spec belongs to which domain in config:
 
@@ -98,6 +103,6 @@ apix new myapi https://api.example.com --oas "https://api.example.domain/myOAS.j
 apix new myapi https://api.example.com --oas "/local/path/to/myOAS.yaml"
 ```
 
-Then, assuming you've set up completions, you should be able to `<tab>` complete your endpoints.
+Assuming you've set up shell completions, you should be able to `<tab>` complete your endpoints!
 
 </details>
