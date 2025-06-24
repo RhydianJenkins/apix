@@ -3,37 +3,40 @@ package oas
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
 type mockResponse struct {
-    StatusCode int
-    Body string
-    Headers map[string]string
+	StatusCode int
+	Body       string
+	Headers    map[string]string
 }
 
 type testCase struct {
-	name string
-	oasPath string
+	name     string
+	oasPath  string
 	expected []string
 }
 
 func TestGetEndpointsValidArgs(t *testing.T) {
 	server := httptest.NewServer(makeHandler(t))
 	defer server.Close()
+	filename := "webhooks.yaml"
+	filepath := makeTestTmpFile(filename, t)
 
 	tests := []testCase{
 		{
-			name: "Run with https url",
-			oasPath: server.URL + "/webhooks.yaml",
+			name:     "Run with https url",
+			oasPath:  server.URL + "/" + filename,
 			expected: []string{"/webhooks/subscription/{id}"},
 		},
-		// TODO Rhydian how do we test local paths?
-		// {
-		// 	name: "Run with absolute path",
-		// 	oasPath: "/home/rhydian/code/basekit/openapi-specification/webhooks.yaml",
-		// 	expected: []string{"/webhooks/subscription", "/webhooks/subscription/{id}"},
-		// },
+		{
+			name: "Run with absolute path",
+			oasPath: filepath,
+			expected: []string{"/webhooks/subscription/{id}"},
+		},
 	}
 
 	for _, test := range tests {
@@ -71,9 +74,9 @@ func makeTest(test testCase) (string, func(t *testing.T)) {
 	}
 }
 
-func makeHandler (t *testing.T) http.HandlerFunc {
+func makeHandler(t *testing.T) http.HandlerFunc {
 	mockResponse := mockResponse{
-        StatusCode: http.StatusCreated,
+		StatusCode: http.StatusCreated,
 		Body: `{
 			"openapi": 3.1.0,
 			"paths": {
@@ -85,12 +88,12 @@ func makeHandler (t *testing.T) http.HandlerFunc {
 				}
 			}
 		}`,
-        Headers: map[string]string{
-            "Content-Type": "application/json",
-        },
-    }
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+		},
+	}
 
-	handler := func (writer http.ResponseWriter, req *http.Request) {
+	handler := func(writer http.ResponseWriter, req *http.Request) {
 		if req.RequestURI != "/webhooks.yaml" {
 			t.Errorf(
 				"Wrong request URI. Expected /test but got %q",
@@ -100,10 +103,30 @@ func makeHandler (t *testing.T) http.HandlerFunc {
 
 		writer.WriteHeader(mockResponse.StatusCode)
 		for key, value := range mockResponse.Headers {
-            writer.Header().Set(key, value)
-        }
+			writer.Header().Set(key, value)
+		}
 		writer.Write([]byte(mockResponse.Body))
 	}
 
 	return http.HandlerFunc(handler)
+}
+
+func makeTestTmpFile(name string, t *testing.T) (string) {
+	tempDir := t.TempDir()
+	tempFile := filepath.Join(tempDir, name)
+
+	yamlContent := `openapi: 3.1.0
+paths:
+  /webhooks/subscription/{id}:
+    get: {}
+  /webhooks/subscription:
+    post: {}
+`
+
+	err := os.WriteFile(tempFile, []byte(yamlContent), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create temp file: %v", err)
+	}
+
+	return tempFile
 }
