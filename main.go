@@ -38,6 +38,7 @@ func initCmd() *cobra.Command {
 	newCmd.Flags().String("user", "", "basic auth username to use for this domain")
 	newCmd.Flags().String("pass", "", "basic auth password to use for this domain")
 	newCmd.Flags().String("oas", "", "path to the oas spec for this endpoint")
+	newCmd.Flags().StringSliceP("header", "H", []string{}, "default headers for this domain in format 'Key: Value' (can be used multiple times)")
 	rootCmd.AddCommand(newCmd)
 
 	var editCmd = &cobra.Command{
@@ -88,20 +89,22 @@ func initCmd() *cobra.Command {
 }
 
 func createHTTPCommand(method string) *cobra.Command {
-    return &cobra.Command{
+    cmd := &cobra.Command{
 		Use: fmt.Sprintf("%s [path]", strings.ToLower(method)),
         Short: fmt.Sprintf("Send a %s request to the active domain", method),
         Example: fmt.Sprintf("apix %s /users/123\ncat req_body.json | apix %s /users/123", strings.ToLower(method), strings.ToLower(method)),
         Args: cobra.RangeArgs(1, 2),
         Run: func(cmd *cobra.Command, args []string) {
 			input, _ := getStdIn()
+			headers, _ := cmd.Flags().GetStringSlice("header")
+			headerMap := handlers.ParseHeaders(headers)
 
 			body, err := handlers.HTTPHandler(
 				method,
 				config.GetActiveDomain(),
 				args[0],
 				input,
-				nil, // TODO Rhydian how to specify this?
+				headerMap,
 			)
 
 			if err != nil {
@@ -127,6 +130,9 @@ func createHTTPCommand(method string) *cobra.Command {
 			return endpoints, cobra.ShellCompDirectiveNoFileComp
 		},
     }
+
+    cmd.Flags().StringSliceP("header", "H", []string{}, "Custom headers in format 'Key: Value' (can be used multiple times)")
+    return cmd
 }
 
 func getStdIn() (*[]byte, error) {

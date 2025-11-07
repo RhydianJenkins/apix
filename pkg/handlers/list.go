@@ -25,6 +25,12 @@ func ListHandler(cmd *cobra.Command, args []string) {
 			fmt.Printf("\tUser: %s\n", domain.User)
 			fmt.Printf("\tPass: %s\n", domain.Pass)
 			fmt.Printf("\tOAS: %s\n", domain.OpenAPISpecPath)
+			if len(domain.Headers) > 0 {
+				fmt.Printf("\tHeaders:\n")
+				for k, v := range domain.Headers {
+					fmt.Printf("\t\t%s: %s\n", k, v)
+				}
+			}
 		}
 	}
 }

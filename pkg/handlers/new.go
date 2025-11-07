@@ -11,6 +11,8 @@ func NewHandler(cmd *cobra.Command, args []string) {
 	user, _ := cmd.Flags().GetString("user")
 	pass, _ := cmd.Flags().GetString("pass")
 	oas, _ := cmd.Flags().GetString("oas")
+	headers, _ := cmd.Flags().GetStringSlice("header")
+	headerMap := ParseHeaders(headers)
 
 	var domain = &config.Domain{
 		Base: base,
@@ -18,6 +20,7 @@ func NewHandler(cmd *cobra.Command, args []string) {
 		User: user,
 		Pass: pass,
 		OpenAPISpecPath: oas,
+		Headers: headerMap,
 	}
 
 	existingDomain, _ := config.LoadDomain(name)
@@ -37,6 +40,9 @@ func NewHandler(cmd *cobra.Command, args []string) {
 		}
 		if domain.OpenAPISpecPath == "" {
 			domain.OpenAPISpecPath = existingDomain.OpenAPISpecPath
+		}
+		if domain.Headers == nil {
+			domain.Headers = existingDomain.Headers
 		}
 	}
 

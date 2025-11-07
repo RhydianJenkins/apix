@@ -11,11 +11,12 @@ import (
 var CfgPath = filepath.Join(os.Getenv("HOME"), ".apix.yaml")
 
 type Domain struct {
-	Base            string `yaml:"base"`
-	Name            string `yaml:"name"`
-	Pass            string `yaml:"pass,omitempty"`
-	User            string `yaml:"user,omitempty"`
-	OpenAPISpecPath string `yaml:"openapispecpath,omitempty"`
+	Base            string            `yaml:"base"`
+	Name            string            `yaml:"name"`
+	Pass            string            `yaml:"pass,omitempty"`
+	User            string            `yaml:"user,omitempty"`
+	OpenAPISpecPath string            `yaml:"openapispecpath,omitempty"`
+	Headers         map[string]string `yaml:"headers,omitempty"`
 }
 
 type config struct {

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"maps"
 	"bytes"
 	"fmt"
 	"io"
@@ -61,7 +62,15 @@ func HTTPHandler(
 	reqBody *[]byte,
 	headers map[string]string,
 ) ([]byte, error) {
-	res, err := makeRequest(method, domain, path, reqBody, headers)
+	mergedHeaders := make(map[string]string)
+
+	if domain != nil && domain.Headers != nil {
+		maps.Copy(mergedHeaders, domain.Headers)
+	}
+
+	maps.Copy(mergedHeaders, headers)
+
+	res, err := makeRequest(method, domain, path, reqBody, mergedHeaders)
 	if err != nil {
 		fmt.Printf("Error making %s request: %v\n", method, err)
 	}
