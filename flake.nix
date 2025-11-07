@@ -15,7 +15,7 @@
             in {
                 packages.apix = pkgs.buildGoModule {
                     pname = "apix";
-                    version = "1.0.0";
+                    version = "1.0.1";
                     src = ./.;
                     vendorHash = "sha256-QFHmy/lYqPzhLxV3Cvi7p4AHtj+aiO0zggHCBNa3A28=";
                 };
