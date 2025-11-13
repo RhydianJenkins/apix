@@ -9,18 +9,25 @@
     outputs = { self, nixpkgs, flake-utils, ... }:
         flake-utils.lib.eachDefaultSystem (system:
             let
-                pkgs = import nixpkgs {
-                    inherit system;
-                };
+                pkgs = import nixpkgs { inherit system; };
             in {
-                packages.apix = pkgs.buildGoModule {
-                    pname = "apix";
-                    version = "1.0.1";
-                    src = ./.;
-                    vendorHash = "sha256-QFHmy/lYqPzhLxV3Cvi7p4AHtj+aiO0zggHCBNa3A28=";
+                packages = {
+                    apix = pkgs.buildGoModule {
+                        pname = "apix";
+                        version = "1.0.1";
+                        src = ./.;
+                        vendorHash = "sha256-QFHmy/lYqPzhLxV3Cvi7p4AHtj+aiO0zggHCBNa3A28=";
+                    };
+                    default = self.packages.${system}.apix;
                 };
 
-                defaultPackage = self.packages.${system}.apix;
+                apps = {
+                    apix = {
+                        type = "app";
+                        program = "${self.packages.${system}.apix}/bin/apix";
+                    };
+                    default = self.apps.${system}.apix;
+                };
 
                 devShell = pkgs.mkShell {
                     buildInputs = [
