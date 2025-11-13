@@ -28,7 +28,7 @@ git clone https://github.com/rhydianjenkins/apix && cd apix
 go build -o apix && ./apix
 
 # or run with nix
-nix run github:rhydianjenkins/apix --help
+nix run github:rhydianjenkins/apix -- --help
 ```
 
 </details>
