@@ -29,7 +29,7 @@
                     default = self.apps.${system}.apix;
                 };
 
-                devShell = pkgs.mkShell {
+                devShells.default = pkgs.mkShell {
                     buildInputs = [
                         pkgs.go
                         pkgs.gopls
