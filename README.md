@@ -16,8 +16,8 @@ It handles authentication, domain switching, and [OpenAPI Specification (OAS)](h
 ```sh
 go install github.com/rhydianjenkins/apix@latest
 
-# ...or run with nix
-nix run github:rhydianjenkins/apix
+# ...or with nix
+nix profile install github:rhydianjenkins/apix
 ```
 
 <details>
