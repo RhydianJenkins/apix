@@ -14,7 +14,7 @@
                 packages = {
                     apix = pkgs.buildGoModule {
                         pname = "apix";
-                        version = "1.0.1";
+                        version = builtins.readFile ./VERSION;
                         src = ./.;
                         vendorHash = "sha256-QFHmy/lYqPzhLxV3Cvi7p4AHtj+aiO0zggHCBNa3A28=";
                     };
@@ -25,6 +25,10 @@
                     apix = {
                         type = "app";
                         program = "${self.packages.${system}.apix}/bin/apix";
+                        meta = {
+                          description = "APIX (API eXecuter) is a lightweight CLI tool to manage and interact with multiple API domains.";
+                          homepage = "github.com/rhydianjenkins/apix";
+                        };
                     };
                     default = self.apps.${system}.apix;
                 };
