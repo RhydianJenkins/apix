@@ -63,7 +63,7 @@ func initCmd() *cobra.Command {
 		Use: "switch [name]",
 		Short: "Sets the active domain to the specified name",
 		Example: "apix switch myapi",
-		Args: cobra.OnlyValidArgs,
+		Args: cobra.ExactArgs(1),
 		Run: handlers.SwitchHandler,
 		ValidArgsFunction: getDomainNames,
 	}
@@ -73,7 +73,7 @@ func initCmd() *cobra.Command {
 		Use: "remove [name]",
 		Short: "Remove a domain from the config",
 		Example: "apix remove myapi",
-		Args: cobra.OnlyValidArgs,
+		Args: cobra.ExactArgs(1),
 		Run: handlers.RemoveHandler,
 		ValidArgsFunction: getDomainNames,
 	}
