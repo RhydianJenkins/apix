@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"fmt"
 	"io"
 	"os"
@@ -11,6 +12,9 @@ import (
 	"github.com/rhydianjenkins/apix/pkg/oas"
 	"github.com/spf13/cobra"
 )
+
+//go:embed VERSION
+var version string
 
 func main() {
 	var rootCmd = initCmd()
@@ -78,6 +82,16 @@ func initCmd() *cobra.Command {
 		ValidArgsFunction: getDomainNames,
 	}
 	rootCmd.AddCommand(removeCmd)
+
+	var versionCmd = &cobra.Command{
+		Use: "version",
+		Short: "Print version information",
+		Args: cobra.ExactArgs(0),
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println(version)
+		},
+	}
+	rootCmd.AddCommand(versionCmd)
 
 	rootCmd.AddCommand(createHTTPCommand("GET"))
 	rootCmd.AddCommand(createHTTPCommand("POST"))
