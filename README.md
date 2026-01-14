@@ -55,6 +55,7 @@ Available Commands:
   put         Send a PUT request to the active domain
   remove      Remove a domain from the config
   switch      Sets the active domain to the specified name
+  version     Print version information
 
 Flags:
   -h, --help   help for apix
