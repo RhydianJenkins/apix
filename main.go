@@ -25,7 +25,7 @@ func main() {
 
 func initCmd() *cobra.Command {
 	var rootCmd = &cobra.Command{
-		Use: "apix [command]",
+		Use:   "apix [command]",
 		Short: "API eXecuter (APIX) is a CLI tool to manage API domains and make requests",
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.Help()
@@ -33,11 +33,11 @@ func initCmd() *cobra.Command {
 	}
 
 	var newCmd = &cobra.Command{
-		Use: "new [name] [base]",
-		Short: "Create a new API domain",
+		Use:     "new [name] [base]",
+		Short:   "Create a new API domain",
 		Example: "apix new myapi https://api.example.com --user foo --pass bar",
-		Args: cobra.ExactArgs(2),
-		Run: handlers.NewHandler,
+		Args:    cobra.ExactArgs(2),
+		Run:     handlers.NewHandler,
 	}
 	newCmd.Flags().String("user", "", "basic auth username to use for this domain")
 	newCmd.Flags().String("pass", "", "basic auth password to use for this domain")
@@ -46,47 +46,71 @@ func initCmd() *cobra.Command {
 	rootCmd.AddCommand(newCmd)
 
 	var editCmd = &cobra.Command{
-		Use: "edit",
+		Use:   "edit",
 		Short: "Open config in your $EDITOR",
-		Args: cobra.ExactArgs(0),
-		Run: handlers.EditHandler,
+		Args:  cobra.ExactArgs(0),
+		Run:   handlers.EditHandler,
 	}
 	editCmd.Flags().Bool("verbose", false, "")
 	rootCmd.AddCommand(editCmd)
 
 	var listCmd = &cobra.Command{
-		Use: "list",
+		Use:   "list",
 		Short: "List all domain names saved in config",
-		Args: cobra.ExactArgs(0),
-		Run: handlers.ListHandler,
+		Args:  cobra.ExactArgs(0),
+		Run:   handlers.ListHandler,
 	}
 	listCmd.Flags().Bool("verbose", false, "Also list all information about each domain")
 	rootCmd.AddCommand(listCmd)
 
 	var switchCmd = &cobra.Command{
-		Use: "switch [name]",
-		Short: "Sets the active domain to the specified name",
-		Example: "apix switch myapi",
-		Args: cobra.ExactArgs(1),
-		Run: handlers.SwitchHandler,
+		Use:               "switch [name]",
+		Short:             "Sets the active domain to the specified name",
+		Example:           "apix switch myapi",
+		Args:              cobra.ExactArgs(1),
+		Run:               handlers.SwitchHandler,
 		ValidArgsFunction: getDomainNames,
 	}
 	rootCmd.AddCommand(switchCmd)
 
 	var removeCmd = &cobra.Command{
-		Use: "remove [name]",
-		Short: "Remove a domain from the config",
-		Example: "apix remove myapi",
-		Args: cobra.ExactArgs(1),
-		Run: handlers.RemoveHandler,
+		Use:               "remove [name]",
+		Short:             "Remove a domain from the config",
+		Example:           "apix remove myapi",
+		Args:              cobra.ExactArgs(1),
+		Run:               handlers.RemoveHandler,
 		ValidArgsFunction: getDomainNames,
 	}
 	rootCmd.AddCommand(removeCmd)
 
+	var showCmd = &cobra.Command{
+		Use:     "show [path]",
+		Short:   "Show a summary of an endpoint from the connected OpenAPI spec",
+		Example: "apix show /users/{id}",
+		Args:    cobra.ExactArgs(1),
+		Run:     handlers.ShowHandler,
+		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+			activeDomain := config.GetActiveDomain()
+
+			if !oas.HasValidOpenAPISpec(activeDomain) {
+				return nil, cobra.ShellCompDirectiveNoFileComp
+			}
+
+			endpoints, err := oas.GetEndpointsValidArgs("", activeDomain.OpenAPISpecPath)
+
+			if err != nil {
+				return nil, cobra.ShellCompDirectiveNoFileComp
+			}
+
+			return endpoints, cobra.ShellCompDirectiveNoFileComp
+		},
+	}
+	rootCmd.AddCommand(showCmd)
+
 	var versionCmd = &cobra.Command{
-		Use: "version",
+		Use:   "version",
 		Short: "Print version information",
-		Args: cobra.ExactArgs(0),
+		Args:  cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println(version)
 		},
@@ -103,12 +127,12 @@ func initCmd() *cobra.Command {
 }
 
 func createHTTPCommand(method string) *cobra.Command {
-    cmd := &cobra.Command{
-		Use: fmt.Sprintf("%s [path]", strings.ToLower(method)),
-        Short: fmt.Sprintf("Send a %s request to the active domain", method),
-        Example: fmt.Sprintf("apix %s /users/123\ncat req_body.json | apix %s /users/123", strings.ToLower(method), strings.ToLower(method)),
-        Args: cobra.RangeArgs(1, 2),
-        Run: func(cmd *cobra.Command, args []string) {
+	cmd := &cobra.Command{
+		Use:     fmt.Sprintf("%s [path]", strings.ToLower(method)),
+		Short:   fmt.Sprintf("Send a %s request to the active domain", method),
+		Example: fmt.Sprintf("apix %s /users/123\ncat req_body.json | apix %s /users/123", strings.ToLower(method), strings.ToLower(method)),
+		Args:    cobra.RangeArgs(1, 2),
+		Run: func(cmd *cobra.Command, args []string) {
 			input, _ := getStdIn()
 			headers, _ := cmd.Flags().GetStringSlice("header")
 			headerMap := handlers.ParseHeaders(headers)
@@ -126,8 +150,8 @@ func createHTTPCommand(method string) *cobra.Command {
 			}
 
 			fmt.Printf("%s", string(body))
-        },
-		ValidArgsFunction: func (cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		},
+		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 			activeDomain := config.GetActiveDomain()
 
 			if !oas.HasValidOpenAPISpec(activeDomain) {
@@ -143,10 +167,10 @@ func createHTTPCommand(method string) *cobra.Command {
 
 			return endpoints, cobra.ShellCompDirectiveNoFileComp
 		},
-    }
+	}
 
-    cmd.Flags().StringSliceP("header", "H", []string{}, "Custom headers in format 'Key: Value' (can be used multiple times)")
-    return cmd
+	cmd.Flags().StringSliceP("header", "H", []string{}, "Custom headers in format 'Key: Value' (can be used multiple times)")
+	return cmd
 }
 
 func getStdIn() (*[]byte, error) {

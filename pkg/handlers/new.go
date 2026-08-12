@@ -15,12 +15,12 @@ func NewHandler(cmd *cobra.Command, args []string) {
 	headerMap := ParseHeaders(headers)
 
 	var domain = &config.Domain{
-		Base: base,
-		Name: name,
-		User: user,
-		Pass: pass,
+		Base:            base,
+		Name:            name,
+		User:            user,
+		Pass:            pass,
 		OpenAPISpecPath: oas,
-		Headers: headerMap,
+		Headers:         headerMap,
 	}
 
 	existingDomain, _ := config.LoadDomain(name)

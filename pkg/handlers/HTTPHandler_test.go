@@ -10,21 +10,21 @@ import (
 )
 
 type mockResponse struct {
-    StatusCode int
-    Body string
-    Headers map[string]string
+	StatusCode int
+	Body       string
+	Headers    map[string]string
 }
 
-func makeHandler (t *testing.T) http.HandlerFunc {
+func makeHandler(t *testing.T) http.HandlerFunc {
 	mockResponse := mockResponse{
-        StatusCode: http.StatusCreated,
-        Body: `{"id": 123}`,
-        Headers: map[string]string{
-            "Content-Type": "application/json",
-        },
-    }
+		StatusCode: http.StatusCreated,
+		Body:       `{"id": 123}`,
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+		},
+	}
 
-	handler := func (writer http.ResponseWriter, req *http.Request) {
+	handler := func(writer http.ResponseWriter, req *http.Request) {
 		if req.Method != "POST" {
 			t.Errorf("Expected POST, got %s", req.Method)
 		}
@@ -49,8 +49,8 @@ func makeHandler (t *testing.T) http.HandlerFunc {
 
 		writer.WriteHeader(mockResponse.StatusCode)
 		for key, value := range mockResponse.Headers {
-            writer.Header().Set(key, value)
-        }
+			writer.Header().Set(key, value)
+		}
 		writer.Write([]byte(mockResponse.Body))
 	}
 

@@ -17,18 +17,11 @@ import (
 )
 
 func GetEndpointsValidArgs(method, specSource string) ([]string, error) {
-	var oasDocument libopenapi.Document
-	var err error
-
 	if specSource == "" {
 		return make([]string, 0), nil
 	}
 
-	if strings.HasPrefix(specSource, "http://") || strings.HasPrefix(specSource, "https://") {
-		oasDocument, err = loadFromRemoteUrl(method, specSource)
-	} else {
-		oasDocument, err = loadFromLocalPath(method, specSource)
-	}
+	oasDocument, err := loadDocument(specSource)
 
 	if err != nil {
 		return nil, err
@@ -41,10 +34,10 @@ func GetEndpointsValidArgs(method, specSource string) ([]string, error) {
 	}
 
 	endpoints := []string{}
-	pathItems := v3Model.Model.Paths.PathItems;
+	pathItems := v3Model.Model.Paths.PathItems
 
 	for path, pathItem := range pathItems.FromNewest() {
-		if hasMethod(pathItem, method) {
+		if method == "" || hasMethod(pathItem, method) {
 			endpoints = append(endpoints, path)
 		}
 	}
@@ -52,7 +45,45 @@ func GetEndpointsValidArgs(method, specSource string) ([]string, error) {
 	return endpoints, nil
 }
 
-func loadFromRemoteUrl(_, remoteUrl string) (libopenapi.Document, error) {
+// GetPathItem loads the given OpenAPI spec and returns the PathItem describing
+// the operations available at the given path. It returns a descriptive error
+// if no spec is connected, the spec fails to load/parse, or the path does not
+// exist in the spec.
+func GetPathItem(path, specSource string) (*v3.PathItem, error) {
+	if specSource == "" {
+		return nil, fmt.Errorf("No OpenAPI spec is connected to the active domain.\nConnect one with `apix new --oas <path/url>` or `apix edit`.\n")
+	}
+
+	oasDocument, err := loadDocument(specSource)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to load OpenAPI spec: %w", err)
+	}
+
+	v3Model, errors := oasDocument.BuildV3Model()
+
+	if len(errors) > 0 {
+		return nil, fmt.Errorf("failed to build OpenAPI v3 model: %v", errors)
+	}
+
+	pathItem := v3Model.Model.Paths.PathItems.GetOrZero(path)
+
+	if pathItem == nil {
+		return nil, fmt.Errorf("No endpoint found for path %q in the connected OpenAPI spec.\n", path)
+	}
+
+	return pathItem, nil
+}
+
+func loadDocument(specSource string) (libopenapi.Document, error) {
+	if strings.HasPrefix(specSource, "http://") || strings.HasPrefix(specSource, "https://") {
+		return loadFromRemoteUrl(specSource)
+	}
+
+	return loadFromLocalPath(specSource)
+}
+
+func loadFromRemoteUrl(remoteUrl string) (libopenapi.Document, error) {
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Get(remoteUrl)
 
@@ -83,7 +114,7 @@ func loadFromRemoteUrl(_, remoteUrl string) (libopenapi.Document, error) {
 	return libopenapi.NewDocumentWithConfiguration(oasData, config)
 }
 
-func loadFromLocalPath(_, basePath string) (libopenapi.Document, error) {
+func loadFromLocalPath(basePath string) (libopenapi.Document, error) {
 	oasData, err := os.ReadFile(basePath)
 
 	if err != nil {
@@ -114,22 +145,22 @@ func HasValidOpenAPISpec(d *config.Domain) bool {
 }
 
 func hasMethod(pathItem *v3.PathItem, method string) bool {
-    switch strings.ToUpper(method) {
-    case "GET":
-        return pathItem.Get != nil
-    case "POST":
-        return pathItem.Post != nil
-    case "PUT":
-        return pathItem.Put != nil
-    case "DELETE":
-        return pathItem.Delete != nil
-    case "PATCH":
-        return pathItem.Patch != nil
-    case "HEAD":
-        return pathItem.Head != nil
-    case "OPTIONS":
-        return pathItem.Options != nil
-    default:
-        return false
-    }
+	switch strings.ToUpper(method) {
+	case "GET":
+		return pathItem.Get != nil
+	case "POST":
+		return pathItem.Post != nil
+	case "PUT":
+		return pathItem.Put != nil
+	case "DELETE":
+		return pathItem.Delete != nil
+	case "PATCH":
+		return pathItem.Patch != nil
+	case "HEAD":
+		return pathItem.Head != nil
+	case "OPTIONS":
+		return pathItem.Options != nil
+	default:
+		return false
+	}
 }

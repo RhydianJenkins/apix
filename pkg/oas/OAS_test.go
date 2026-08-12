@@ -33,8 +33,8 @@ func TestGetEndpointsValidArgs(t *testing.T) {
 			expected: []string{"/webhooks/subscription/{id}"},
 		},
 		{
-			name: "Run with absolute path",
-			oasPath: filepath,
+			name:     "Run with absolute path",
+			oasPath:  filepath,
 			expected: []string{"/webhooks/subscription/{id}"},
 		},
 	}
@@ -111,7 +111,44 @@ func makeHandler(t *testing.T) http.HandlerFunc {
 	return http.HandlerFunc(handler)
 }
 
-func makeTestTmpFile(name string, t *testing.T) (string) {
+func TestGetPathItem(t *testing.T) {
+	filename := "webhooks.yaml"
+	filepath := makeTestTmpFile(filename, t)
+
+	t.Run("returns the path item when the path exists", func(t *testing.T) {
+		pathItem, err := GetPathItem("/webhooks/subscription/{id}", filepath)
+
+		if err != nil {
+			t.Fatalf("GetPathItem() returned error %v", err)
+		}
+
+		if pathItem == nil {
+			t.Fatalf("GetPathItem() = nil, expected a path item")
+		}
+
+		if pathItem.Get == nil {
+			t.Errorf("expected GET operation to be present on path item")
+		}
+	})
+
+	t.Run("returns an error when the path does not exist", func(t *testing.T) {
+		_, err := GetPathItem("/does/not/exist", filepath)
+
+		if err == nil {
+			t.Fatalf("expected an error, got nil")
+		}
+	})
+
+	t.Run("returns an error when no spec is connected", func(t *testing.T) {
+		_, err := GetPathItem("/webhooks/subscription/{id}", "")
+
+		if err == nil {
+			t.Fatalf("expected an error, got nil")
+		}
+	})
+}
+
+func makeTestTmpFile(name string, t *testing.T) string {
 	tempDir := t.TempDir()
 	tempFile := filepath.Join(tempDir, name)
 
