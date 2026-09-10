@@ -23,8 +23,8 @@ func registerGRPCCommands(rootCmd *cobra.Command) {
 func newGRPCCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "grpc [method]",
-		Short:   "Invoke a unary gRPC method (with an empty request) on the active domain",
-		Example: "apix grpc GetUser\napix grpc mypkg.UserService/GetUser",
+		Short:   "Invoke a unary gRPC method on the active domain",
+		Example: "apix grpc GetUser\napix grpc mypkg.UserService/GetUser\ncat req_body.json | apix grpc GetUser",
 		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			activeDomain := config.GetActiveDomain()
@@ -34,10 +34,11 @@ func newGRPCCommand() *cobra.Command {
 				os.Exit(1)
 			}
 
+			input, _ := getStdIn()
 			headers, _ := cmd.Flags().GetStringSlice("header")
 			headerMap := handlers.ParseHeaders(headers)
 
-			body, err := handlers.GRPCHandler(activeDomain, args[0], headerMap)
+			body, err := handlers.GRPCHandler(activeDomain, args[0], input, headerMap)
 
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error making grpc call: %v\n", err)

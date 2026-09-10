@@ -29,10 +29,11 @@ type Server struct {
 	grpcSrv *grpc.Server
 
 	lastMetadata metadata.MD
+	lastName     string
 }
 
 func NewServer() (*Server, error) {
-	fileDesc, replyDesc, emptyDesc, err := buildDescriptors()
+	fileDesc, replyDesc, requestDesc, err := buildDescriptors()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build test descriptors: %w", err)
 	}
@@ -57,7 +58,7 @@ func NewServer() (*Server, error) {
 			{
 				MethodName: MethodName,
 				Handler: func(_ any, ctx context.Context, dec func(any) error, _ grpc.UnaryServerInterceptor) (any, error) {
-					in := dynamicpb.NewMessage(emptyDesc)
+					in := dynamicpb.NewMessage(requestDesc)
 					if err := dec(in); err != nil {
 						return nil, err
 					}
@@ -66,8 +67,11 @@ func NewServer() (*Server, error) {
 						s.lastMetadata = md
 					}
 
+					name := in.Get(requestDesc.Fields().ByName("name")).String()
+					s.lastName = name
+
 					reply := dynamicpb.NewMessage(replyDesc)
-					reply.Set(replyDesc.Fields().ByName("message"), protoreflect.ValueOfString("hello"))
+					reply.Set(replyDesc.Fields().ByName("message"), protoreflect.ValueOfString("hello, "+name))
 					return reply, nil
 				},
 			},
@@ -121,6 +125,13 @@ func (s *Server) LastMetadata() metadata.MD {
 	return s.lastMetadata
 }
 
+// LastName returns the "name" field of the most recent GetReply request
+// body, for tests to assert that a piped JSON request body actually
+// reached the server.
+func (s *Server) LastName() string {
+	return s.lastName
+}
+
 // streamInterceptor exists so tests can assert that metadata reaches
 // streaming calls (e.g. reflection's ServerReflectionInfo), not just unary
 // ones.
@@ -136,13 +147,24 @@ func (s *Server) Close() {
 	s.grpcSrv.Stop()
 }
 
-func buildDescriptors() (file protoreflect.FileDescriptor, reply, empty protoreflect.MessageDescriptor, err error) {
+func buildDescriptors() (file protoreflect.FileDescriptor, reply, request protoreflect.MessageDescriptor, err error) {
 	fd := &descriptorpb.FileDescriptorProto{
 		Name:    proto.String("testservice.proto"),
 		Package: proto.String("testpkg"),
 		Syntax:  proto.String("proto3"),
 		MessageType: []*descriptorpb.DescriptorProto{
-			{Name: proto.String("Empty")},
+			{
+				Name: proto.String("GetReplyRequest"),
+				Field: []*descriptorpb.FieldDescriptorProto{
+					{
+						Name:     proto.String("name"),
+						Number:   proto.Int32(1),
+						Label:    descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(),
+						Type:     descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
+						JsonName: proto.String("name"),
+					},
+				},
+			},
 			{
 				Name: proto.String("Reply"),
 				Field: []*descriptorpb.FieldDescriptorProto{
@@ -162,7 +184,7 @@ func buildDescriptors() (file protoreflect.FileDescriptor, reply, empty protoref
 				Method: []*descriptorpb.MethodDescriptorProto{
 					{
 						Name:       proto.String(MethodName),
-						InputType:  proto.String(".testpkg.Empty"),
+						InputType:  proto.String(".testpkg.GetReplyRequest"),
 						OutputType: proto.String(".testpkg.Reply"),
 					},
 				},

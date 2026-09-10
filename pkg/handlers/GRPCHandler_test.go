@@ -27,7 +27,7 @@ func TestGRPCHandler(t *testing.T) {
 		},
 	}
 
-	body, err := GRPCHandler(domain, grpctest.MethodName, map[string]string{"x-cli": "cli-value"})
+	body, err := GRPCHandler(domain, grpctest.MethodName, nil, map[string]string{"x-cli": "cli-value"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -47,6 +47,38 @@ func TestGRPCHandler(t *testing.T) {
 	}
 }
 
+func TestGRPCHandler_WithRequestBody(t *testing.T) {
+	srv, err := grpctest.NewServer()
+	if err != nil {
+		t.Fatalf("failed to build test server: %v", err)
+	}
+	defer srv.Close()
+
+	go srv.Serve()
+
+	domain := &config.Domain{
+		Base:     srv.Host(),
+		Name:     "testgrpc",
+		Protocol: config.ProtocolGRPC,
+		GRPC:     &config.GRPCOptions{Insecure: true, Port: srv.Port()},
+	}
+
+	reqBody := []byte(`{"name": "world"}`)
+
+	body, err := GRPCHandler(domain, grpctest.MethodName, &reqBody, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(string(body), "hello, world") {
+		t.Errorf("expected response to contain %q, got: %s", "hello, world", string(body))
+	}
+
+	if got := srv.LastName(); got != "world" {
+		t.Errorf("expected request body to reach the server as name=world, got: %q", got)
+	}
+}
+
 func TestGRPCHandler_UnknownMethod(t *testing.T) {
 	srv, err := grpctest.NewServer()
 	if err != nil {
@@ -63,7 +95,7 @@ func TestGRPCHandler_UnknownMethod(t *testing.T) {
 		GRPC:     &config.GRPCOptions{Insecure: true, Port: srv.Port()},
 	}
 
-	_, err = GRPCHandler(domain, "NoSuchMethod", nil)
+	_, err = GRPCHandler(domain, "NoSuchMethod", nil, nil)
 	if err == nil {
 		t.Fatal("expected an error for an unknown method, got nil")
 	}

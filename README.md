@@ -48,7 +48,7 @@ Available Commands:
   delete      Send a DELETE request to the active domain
   edit        Open config in your $EDITOR
   get         Send a GET request to the active domain
-  grpc        Invoke a unary gRPC method (with an empty request) on the active domain
+  grpc        Invoke a unary gRPC method on the active domain
   help        Help about any command
   list        List all domain names saved in config
   new         Create a new API domain
@@ -145,12 +145,20 @@ apix new mygrpc grpc.example.com --protocol grpc --port 443
 apix new mygrpc localhost --protocol grpc --insecure --port 50051
 ```
 
-Then invoke a unary method by name (with an empty request) using `apix grpc`:
+Then invoke a unary method by name using `apix grpc`. If the method takes no input (or you're happy sending an empty request), just run it directly:
 
 ```sh
 apix grpc GetUser
 # ...or qualify it if the method name is ambiguous across services
 apix grpc mypkg.UserService/GetUser
+```
+
+If the method expects a request body, pipe it in as JSON, same as `apix post`/`apix put`. Field names must match the input message's `protojson` representation:
+
+```sh
+echo '{"name": "world"}' | apix grpc GetUser
+# ...or from a file
+cat req_body.json | apix grpc mypkg.UserService/GetUser
 ```
 
 `apix` uses [server reflection](https://grpc.io/docs/guides/reflection/) to discover services and methods, so the target server must have reflection enabled.

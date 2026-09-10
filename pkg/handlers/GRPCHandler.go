@@ -10,7 +10,7 @@ import (
 	"github.com/rhydianjenkins/apix/pkg/grpcclient"
 )
 
-func GRPCHandler(domain *config.Domain, method string, headers map[string]string) ([]byte, error) {
+func GRPCHandler(domain *config.Domain, method string, reqBody *[]byte, headers map[string]string) ([]byte, error) {
 	mergedHeaders := make(map[string]string)
 
 	if domain != nil && domain.Headers != nil {
@@ -33,7 +33,7 @@ func GRPCHandler(domain *config.Domain, method string, headers map[string]string
 		return nil, fmt.Errorf("failed to resolve method %q: %w", method, err)
 	}
 
-	body, err := grpcclient.Invoke(ctx, conn, methodInfo, mergedHeaders)
+	body, err := grpcclient.Invoke(ctx, conn, methodInfo, reqBody, mergedHeaders)
 	if err != nil {
 		return nil, err
 	}
