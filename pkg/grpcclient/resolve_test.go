@@ -105,6 +105,23 @@ func TestResolveMethod_ExcludesReflectionService(t *testing.T) {
 	}
 }
 
+func TestListMethods(t *testing.T) {
+	_, conn := startTestServer(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	methods, err := grpcclient.ListMethods(ctx, conn, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	want := grpctest.ServiceName + "/" + grpctest.MethodName
+	if len(methods) != 1 || methods[0] != want {
+		t.Errorf("expected methods %v, got %v", []string{want}, methods)
+	}
+}
+
 // Reflection is a separate RPC from the eventual method call - servers that
 // require auth for regular RPCs typically require it for reflection too, so
 // metadata passed to ResolveMethod must reach the reflection stream itself.
