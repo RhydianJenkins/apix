@@ -132,15 +132,17 @@ func loadFromLocalPath(basePath string) (libopenapi.Document, error) {
 }
 
 func HasValidOpenAPISpec(d *config.Domain) bool {
-	if d.OpenAPISpecPath == "" {
+	if d == nil || d.HTTP == nil || d.HTTP.OpenAPISpecPath == "" {
 		return false
 	}
 
-	if strings.HasPrefix(d.OpenAPISpecPath, "http://") || strings.HasPrefix(d.OpenAPISpecPath, "https://") {
+	specPath := d.HTTP.OpenAPISpecPath
+
+	if strings.HasPrefix(specPath, "http://") || strings.HasPrefix(specPath, "https://") {
 		return true
 	}
 
-	_, err := os.Stat(d.OpenAPISpecPath)
+	_, err := os.Stat(specPath)
 	return err == nil
 }
 

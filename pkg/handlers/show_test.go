@@ -33,9 +33,11 @@ paths:
 	}
 
 	config.SetDomain(&config.Domain{
-		Name:            "testapi",
-		Base:            "https://api.example.com",
-		OpenAPISpecPath: specPath,
+		Name: "testapi",
+		Base: "https://api.example.com",
+		HTTP: &config.HTTPOptions{
+			OpenAPISpecPath: specPath,
+		},
 	})
 
 	cmd := &cobra.Command{}
@@ -70,9 +72,11 @@ paths:
 	}
 
 	config.SetDomain(&config.Domain{
-		Name:            "testapi",
-		Base:            "https://api.example.com",
-		OpenAPISpecPath: specPath,
+		Name: "testapi",
+		Base: "https://api.example.com",
+		HTTP: &config.HTTPOptions{
+			OpenAPISpecPath: specPath,
+		},
 	})
 
 	cmd := &cobra.Command{}
