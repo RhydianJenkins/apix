@@ -17,7 +17,7 @@
                         pname = "apix";
                         inherit version;
                         src = ./.;
-                        vendorHash = "sha256-QFHmy/lYqPzhLxV3Cvi7p4AHtj+aiO0zggHCBNa3A28=";
+                        vendorHash = "sha256-8UYvuu60pwaZm/O1f8/atlCFsJdExZy/MUmOobgGXe8=";
                         ldflags = [ "-X main.version=${version}" ];
                     };
                     default = self.packages.${system}.apix;
