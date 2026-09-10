@@ -24,10 +24,10 @@ func startTestServer(t *testing.T) (*grpctest.Server, *grpc.ClientConn) {
 	go srv.Serve()
 
 	domain := &config.Domain{
-		Base:     srv.Addr(),
+		Base:     srv.Host(),
 		Name:     "testgrpc",
 		Protocol: config.ProtocolGRPC,
-		GRPC:     &config.GRPCOptions{Insecure: true},
+		GRPC:     &config.GRPCOptions{Insecure: true, Port: srv.Port()},
 	}
 
 	conn, err := grpcclient.Dial(domain)

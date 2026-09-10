@@ -41,6 +41,7 @@ func TestSetAndLoadDomain_HTTP(t *testing.T) {
 			User:            "foo",
 			Pass:            "bar",
 			OpenAPISpecPath: "/tmp/spec.yaml",
+			Port:            8443,
 		},
 	}
 
@@ -63,7 +64,7 @@ func TestSetAndLoadDomain_HTTP(t *testing.T) {
 		t.Fatalf("expected HTTP options to round-trip, got nil")
 	}
 
-	if loaded.HTTP.User != "foo" || loaded.HTTP.Pass != "bar" || loaded.HTTP.OpenAPISpecPath != "/tmp/spec.yaml" {
+	if loaded.HTTP.User != "foo" || loaded.HTTP.Pass != "bar" || loaded.HTTP.OpenAPISpecPath != "/tmp/spec.yaml" || loaded.HTTP.Port != 8443 {
 		t.Errorf("HTTP options did not round-trip correctly, got: %+v", loaded.HTTP)
 	}
 
@@ -83,10 +84,11 @@ func TestSetAndLoadDomain_GRPC(t *testing.T) {
 
 	domain := &Domain{
 		Name:     "grpc-api",
-		Base:     "localhost:50051",
+		Base:     "localhost",
 		Protocol: ProtocolGRPC,
 		GRPC: &GRPCOptions{
 			Insecure: true,
+			Port:     50051,
 		},
 	}
 
@@ -103,6 +105,10 @@ func TestSetAndLoadDomain_GRPC(t *testing.T) {
 
 	if loaded.GRPC == nil || !loaded.GRPC.Insecure {
 		t.Errorf("expected GRPC options to round-trip with Insecure=true, got: %+v", loaded.GRPC)
+	}
+
+	if loaded.GRPC == nil || loaded.GRPC.Port != 50051 {
+		t.Errorf("expected GRPC options to round-trip with Port=50051, got: %+v", loaded.GRPC)
 	}
 
 	if loaded.HTTP != nil {

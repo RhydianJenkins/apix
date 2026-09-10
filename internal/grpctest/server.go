@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"strconv"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
@@ -89,6 +90,33 @@ func (s *Server) Serve() error {
 
 func (s *Server) Addr() string {
 	return s.Listener.Addr().String()
+}
+
+// Host returns the host part of Addr, with no port - suitable for a
+// config.Domain.Base, which must never include a port itself.
+func (s *Server) Host() string {
+	host, _, err := net.SplitHostPort(s.Addr())
+	if err != nil {
+		return s.Addr()
+	}
+
+	return host
+}
+
+// Port returns the numeric port part of Addr, for use as
+// config.GRPCOptions.Port.
+func (s *Server) Port() int {
+	_, portStr, err := net.SplitHostPort(s.Addr())
+	if err != nil {
+		return 0
+	}
+
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		return 0
+	}
+
+	return port
 }
 
 func (s *Server) LastMetadata() metadata.MD {

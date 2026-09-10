@@ -18,10 +18,10 @@ func TestGRPCHandler(t *testing.T) {
 	go srv.Serve()
 
 	domain := &config.Domain{
-		Base:     srv.Addr(),
+		Base:     srv.Host(),
 		Name:     "testgrpc",
 		Protocol: config.ProtocolGRPC,
-		GRPC:     &config.GRPCOptions{Insecure: true},
+		GRPC:     &config.GRPCOptions{Insecure: true, Port: srv.Port()},
 		Headers: map[string]string{
 			"x-config": "config-value",
 		},
@@ -57,10 +57,10 @@ func TestGRPCHandler_UnknownMethod(t *testing.T) {
 	go srv.Serve()
 
 	domain := &config.Domain{
-		Base:     srv.Addr(),
+		Base:     srv.Host(),
 		Name:     "testgrpc",
 		Protocol: config.ProtocolGRPC,
-		GRPC:     &config.GRPCOptions{Insecure: true},
+		GRPC:     &config.GRPCOptions{Insecure: true, Port: srv.Port()},
 	}
 
 	_, err = GRPCHandler(domain, "NoSuchMethod", nil)

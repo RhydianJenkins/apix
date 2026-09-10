@@ -33,10 +33,14 @@ func ListHandler(cmd *cobra.Command, args []string) {
 				fmt.Printf("\tUser: %s\n", domain.HTTP.User)
 				fmt.Printf("\tPass: %s\n", domain.HTTP.Pass)
 				fmt.Printf("\tOAS: %s\n", domain.HTTP.OpenAPISpecPath)
+				if domain.HTTP.Port != 0 {
+					fmt.Printf("\tPort: %d\n", domain.HTTP.Port)
+				}
 			}
 
 			if domain.GRPC != nil {
 				fmt.Printf("\tInsecure: %t\n", domain.GRPC.Insecure)
+				fmt.Printf("\tPort: %d\n", domain.GRPC.Port)
 			}
 
 			if len(domain.Headers) > 0 {
