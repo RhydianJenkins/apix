@@ -28,7 +28,7 @@ func GRPCHandler(domain *config.Domain, method string, headers map[string]string
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	methodInfo, err := grpcclient.ResolveMethod(ctx, conn, method)
+	methodInfo, err := grpcclient.ResolveMethod(ctx, conn, method, mergedHeaders)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve method %q: %w", method, err)
 	}

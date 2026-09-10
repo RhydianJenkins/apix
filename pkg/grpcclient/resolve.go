@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
@@ -29,8 +30,14 @@ type MethodInfo struct {
 }
 
 // methodArg may be a bare method name (e.g. "GetUser") or a qualified
-// "package.Service/Method" path.
-func ResolveMethod(ctx context.Context, conn *grpc.ClientConn, methodArg string) (*MethodInfo, error) {
+// "package.Service/Method" path. md is sent as outgoing metadata on the
+// reflection stream itself, since servers that require auth for regular
+// RPCs typically require it for reflection too.
+func ResolveMethod(ctx context.Context, conn *grpc.ClientConn, methodArg string, md map[string]string) (*MethodInfo, error) {
+	if len(md) > 0 {
+		ctx = metadata.NewOutgoingContext(ctx, metadata.New(md))
+	}
+
 	rs, err := newReflectionStream(ctx, conn)
 	if err != nil {
 		return nil, err

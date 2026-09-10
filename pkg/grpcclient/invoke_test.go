@@ -15,7 +15,7 @@ func TestInvoke(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	info, err := grpcclient.ResolveMethod(ctx, conn, "GetReply")
+	info, err := grpcclient.ResolveMethod(ctx, conn, "GetReply", nil)
 	if err != nil {
 		t.Fatalf("failed to resolve method: %v", err)
 	}

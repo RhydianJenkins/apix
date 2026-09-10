@@ -27,7 +27,18 @@ func Dial(domain *config.Domain) (*grpc.ClientConn, error) {
 		return nil, err
 	}
 
-	conn, err := grpc.NewClient(target, grpc.WithTransportCredentials(creds))
+	// grpc.NewClient defaults to the "dns" resolver scheme (unlike the
+	// deprecated grpc.Dial, which defaulted to "passthrough"). A bare
+	// "host:port" target like "localhost:8090" often parses as a URI with
+	// an unregistered scheme ("localhost") and gets silently rewritten to
+	// "dns:///localhost:8090", causing a real DNS lookup instead of just
+	// dialing the address directly. If that lookup fails, gRPC's DNS
+	// resolver can swallow the error and report "produced zero addresses"
+	// instead of a clear DNS failure. Force "passthrough" explicitly so
+	// target is always used as-is.
+	passthroughTarget := "passthrough:///" + target
+
+	conn, err := grpc.NewClient(passthroughTarget, grpc.WithTransportCredentials(creds))
 	if err != nil {
 		return nil, fmt.Errorf("failed to dial %q: %w", target, err)
 	}
