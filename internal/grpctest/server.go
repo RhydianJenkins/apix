@@ -92,8 +92,8 @@ func (s *Server) Addr() string {
 	return s.Listener.Addr().String()
 }
 
-// Host returns the host part of Addr, with no port - suitable for a
-// config.Domain.Base, which must never include a port itself.
+// Host is suitable for a config.Domain.Base, which must never include a
+// port itself.
 func (s *Server) Host() string {
 	host, _, err := net.SplitHostPort(s.Addr())
 	if err != nil {
@@ -103,8 +103,6 @@ func (s *Server) Host() string {
 	return host
 }
 
-// Port returns the numeric port part of Addr, for use as
-// config.GRPCOptions.Port.
 func (s *Server) Port() int {
 	_, portStr, err := net.SplitHostPort(s.Addr())
 	if err != nil {
@@ -123,9 +121,9 @@ func (s *Server) LastMetadata() metadata.MD {
 	return s.lastMetadata
 }
 
-// streamInterceptor records incoming metadata for streaming RPCs (e.g. the
-// reflection service's ServerReflectionInfo), so tests can assert that
-// metadata reaches reflection calls, not just unary ones.
+// streamInterceptor exists so tests can assert that metadata reaches
+// streaming calls (e.g. reflection's ServerReflectionInfo), not just unary
+// ones.
 func (s *Server) streamInterceptor(srv any, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 	if md, ok := metadata.FromIncomingContext(ss.Context()); ok {
 		s.lastMetadata = md

@@ -107,9 +107,9 @@ func TestHeaderMerging(t *testing.T) {
 	}
 
 	cliHeaders := map[string]string{
-		"Authorization": "Bearer cli-token", // Should override config
-		"X-CLI":         "cli-value",        // Should be added
-		"Content-Type":  "text/plain",       // Should override default
+		"Authorization": "Bearer cli-token",
+		"X-CLI":         "cli-value",
+		"Content-Type":  "text/plain",
 	}
 
 	_, err := HTTPHandler("GET", domain, "/test", nil, cliHeaders)
@@ -118,12 +118,12 @@ func TestHeaderMerging(t *testing.T) {
 	}
 
 	tests := map[string]string{
-		"Authorization": "Bearer cli-token", // CLI overrides config
-		"X-Config":      "config-value",     // Config header preserved
-		"X-Cli":         "cli-value",        // CLI header added (normalized to lowercase)
-		"Content-Type":  "text/plain",       // CLI overrides default
-		"Accept":        "application/json", // Default header preserved
-		"User-Agent":    "ConfigAgent/1.0",  // Config overrides default
+		"Authorization": "Bearer cli-token",
+		"X-Config":      "config-value",
+		"X-Cli":         "cli-value", // captured header names are canonicalized by net/http
+		"Content-Type":  "text/plain",
+		"Accept":        "application/json",
+		"User-Agent":    "ConfigAgent/1.0",
 	}
 
 	for expectedHeader, expectedValue := range tests {

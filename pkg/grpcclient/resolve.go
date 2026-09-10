@@ -42,10 +42,8 @@ func ResolveMethod(ctx context.Context, conn *grpc.ClientConn, methodArg string,
 	return findMethod(files, serviceNames, methodArg)
 }
 
-// ListMethods returns every non-reflection method available on conn, as
-// fully qualified "package.Service/Method" names sorted alphabetically.
-// It's intended for shell completion, where each candidate must be a
-// directly usable, unambiguous `apix grpc` argument.
+// ListMethods is intended for shell completion, where each candidate must
+// be a directly usable, unambiguous `apix grpc` argument.
 func ListMethods(ctx context.Context, conn *grpc.ClientConn, md map[string]string) ([]string, error) {
 	files, serviceNames, err := discoverServices(ctx, conn, md)
 	if err != nil {
@@ -80,8 +78,6 @@ func ListMethods(ctx context.Context, conn *grpc.ClientConn, md map[string]strin
 	return names, nil
 }
 
-// discoverServices opens a reflection stream, lists the server's services,
-// and fetches+builds the file descriptors needed to inspect their methods.
 // md is sent as outgoing metadata on the reflection stream itself, since
 // servers that require auth for regular RPCs typically require it for
 // reflection too.
@@ -195,7 +191,6 @@ func findMethod(files *protoregistry.Files, serviceNames []string, methodArg str
 	return candidates[0], nil
 }
 
-// ok is false if arg has no "/" (i.e. it's a bare method name).
 func splitServiceMethod(arg string) (service, method string, ok bool) {
 	idx := strings.LastIndex(arg, "/")
 	if idx < 0 {

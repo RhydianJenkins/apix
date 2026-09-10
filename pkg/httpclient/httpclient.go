@@ -61,11 +61,8 @@ func Do(
 	return resp, nil
 }
 
-// Target returns the request base URL for domain: a host-only domain.Base
-// combined with domain.HTTP.Port (e.g. "https://api.example.com" + 8443 ->
-// "https://api.example.com:8443"). base must never include a port itself
-// when a port is configured separately - the port is always specified via
-// --port / http.port.
+// base must never include a port itself when a port is configured
+// separately - the port is always specified via --port / http.port.
 func Target(domain *config.Domain) (string, error) {
 	if domain == nil {
 		return "", nil
