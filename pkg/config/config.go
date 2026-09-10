@@ -29,10 +29,12 @@ type HTTPOptions struct {
 	User            string `yaml:"user,omitempty"`
 	Pass            string `yaml:"pass,omitempty"`
 	OpenAPISpecPath string `yaml:"openapispecpath,omitempty"`
+	Port            int    `yaml:"port,omitempty"` // if set, base must be host-only and is combined as "scheme://host:port"
 }
 
 type GRPCOptions struct {
 	Insecure bool `yaml:"insecure,omitempty"`
+	Port     int  `yaml:"port,omitempty"` // if set, combined with Base (host-only) as "host:port"
 }
 
 // An empty Protocol defaults to HTTP for backwards compatibility.

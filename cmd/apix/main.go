@@ -37,6 +37,7 @@ func newRootCmd(version string) *cobra.Command {
 	}
 	newCmd.Flags().String("protocol", config.ProtocolHTTP, "protocol for this domain: http or grpc")
 	newCmd.Flags().StringSliceP("header", "H", []string{}, "default headers/metadata for this domain in format 'Key: Value' (can be used multiple times)")
+	newCmd.Flags().Int("port", 0, "port to connect to; base must be host-only when set (required for grpc, optional for http)")
 	addHTTPNewFlags(newCmd)
 	addGRPCNewFlags(newCmd)
 	rootCmd.AddCommand(newCmd)

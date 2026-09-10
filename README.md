@@ -120,16 +120,29 @@ Assuming you've set up shell completions, you should be able to `<tab>` complete
 </details>
 
 <details>
+<summary><strong>How do I connect to a non-default port?</strong></summary>
+
+For both `http` and `grpc` domains, `base` must be host-only - it can never include a port itself. If your API listens on a non-default port, set it separately with `--port` (or `http.port`/`grpc.port` in `.apix.yaml`):
+
+```sh
+apix new myapi https://api.example.com --port 8443
+```
+
+If you omit `--port`, the scheme's default port is used as normal (`http` domains only - `grpc` domains always require `--port`, since there's no equivalent default).
+
+</details>
+
+<details>
 <summary><strong>How do I use gRPC?</strong></summary>
 
-Create a domain with `--protocol grpc`, pointing `base` at the `host:port` of your gRPC server:
+Create a domain with `--protocol grpc`, pointing `base` at the host of your gRPC server and `--port` at its port. `base` must be host-only - the port always comes from `--port` (or `grpc.port` in `.apix.yaml`), never from `base` itself:
 
 ```sh
 # TLS (default)
-apix new mygrpc grpc.example.com:443 --protocol grpc
+apix new mygrpc grpc.example.com --protocol grpc --port 443
 
 # plaintext, e.g. for local development
-apix new mygrpc localhost:50051 --protocol grpc --insecure
+apix new mygrpc localhost --protocol grpc --insecure --port 50051
 ```
 
 Then invoke a unary method by name (with an empty request) using `apix grpc`:

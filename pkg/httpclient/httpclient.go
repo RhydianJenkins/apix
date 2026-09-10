@@ -3,7 +3,10 @@ package httpclient
 import (
 	"bytes"
 	"fmt"
+	"net"
 	"net/http"
+	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/rhydianjenkins/apix/pkg/config"
@@ -23,12 +26,17 @@ func Do(
 	var req *http.Request
 	var err error
 
-	url := domain.Base + path
+	base, err := Target(domain)
+	if err != nil {
+		return nil, err
+	}
+
+	reqURL := base + path
 
 	if reqBody != nil {
-		req, err = http.NewRequest(method, url, bytes.NewBuffer(*reqBody))
+		req, err = http.NewRequest(method, reqURL, bytes.NewBuffer(*reqBody))
 	} else {
-		req, err = http.NewRequest(method, url, nil)
+		req, err = http.NewRequest(method, reqURL, nil)
 	}
 
 	if err != nil {
@@ -51,6 +59,34 @@ func Do(
 	}
 
 	return resp, nil
+}
+
+// Target returns the request base URL for domain: a host-only domain.Base
+// combined with domain.HTTP.Port (e.g. "https://api.example.com" + 8443 ->
+// "https://api.example.com:8443"). base must never include a port itself
+// when a port is configured separately - the port is always specified via
+// --port / http.port.
+func Target(domain *config.Domain) (string, error) {
+	if domain == nil {
+		return "", nil
+	}
+
+	if domain.HTTP == nil || domain.HTTP.Port == 0 {
+		return domain.Base, nil
+	}
+
+	u, err := url.Parse(domain.Base)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse base %q: %w", domain.Base, err)
+	}
+
+	if u.Port() != "" {
+		return "", fmt.Errorf("base %q already includes a port; set it separately with --port instead", domain.Base)
+	}
+
+	u.Host = net.JoinHostPort(u.Hostname(), strconv.Itoa(domain.HTTP.Port))
+
+	return u.String(), nil
 }
 
 func setDefaultHeaders(req *http.Request) {
