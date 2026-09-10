@@ -9,6 +9,7 @@ It handles authentication, domain switching, and [OpenAPI Specification (OAS)](h
 - Manage API domains
 - Store credentials in `yaml`
 - OAS support
+- gRPC support (via server reflection)
 - Endpoint `<tab>` completions
 
 ## 📦 Getting Started
@@ -47,6 +48,7 @@ Available Commands:
   delete      Send a DELETE request to the active domain
   edit        Open config in your $EDITOR
   get         Send a GET request to the active domain
+  grpc        Invoke a unary gRPC method (with an empty request) on the active domain
   help        Help about any command
   list        List all domain names saved in config
   new         Create a new API domain
@@ -54,6 +56,7 @@ Available Commands:
   post        Send a POST request to the active domain
   put         Send a PUT request to the active domain
   remove      Remove a domain from the config
+  show        Show a summary of an endpoint from the connected OpenAPI spec
   switch      Sets the active domain to the specified name
   version     Print version information
 
@@ -113,5 +116,30 @@ apix new myapi https://api.example.com --oas "/local/path/to/myOAS.yaml"
 ```
 
 Assuming you've set up shell completions, you should be able to `<tab>` complete your endpoints!
+
+</details>
+
+<details>
+<summary><strong>How do I use gRPC?</strong></summary>
+
+Create a domain with `--protocol grpc`, pointing `base` at the `host:port` of your gRPC server:
+
+```sh
+# TLS (default)
+apix new mygrpc grpc.example.com:443 --protocol grpc
+
+# plaintext, e.g. for local development
+apix new mygrpc localhost:50051 --protocol grpc --insecure
+```
+
+Then invoke a unary method by name (with an empty request) using `apix grpc`:
+
+```sh
+apix grpc GetUser
+# ...or qualify it if the method name is ambiguous across services
+apix grpc mypkg.UserService/GetUser
+```
+
+`apix` uses [server reflection](https://grpc.io/docs/guides/reflection/) to discover services and methods, so the target server must have reflection enabled.
 
 </details>
