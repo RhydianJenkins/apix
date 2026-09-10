@@ -1,23 +1,22 @@
-// Package cmd assembles the apix command tree. Commands are grouped one
-// file per protocol (http.go, grpc.go, ...) so that adding support for a new
-// protocol only means adding a new file here - it never requires editing an
-// existing protocol's file. This file holds only protocol-agnostic
-// concerns: the root command itself and domain management commands (new,
-// edit, list, switch, remove, version) that apply regardless of protocol.
-package cmd
+package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/rhydianjenkins/apix/pkg/config"
 	"github.com/rhydianjenkins/apix/pkg/handlers"
 	"github.com/spf13/cobra"
 )
 
-// Execute builds the apix command tree and runs it. version is supplied by
-// main (embedded from the VERSION file) and surfaced via `apix version`.
-func Execute(version string) error {
-	return newRootCmd(version).Execute()
+// version is overridden at build time via -ldflags "-X main.version=...".
+// See the `build` target in the Makefile and the `ldflags` in flake.nix.
+var version = "dev"
+
+func main() {
+	if err := newRootCmd(version).Execute(); err != nil {
+		os.Exit(1)
+	}
 }
 
 func newRootCmd(version string) *cobra.Command {
@@ -38,8 +37,6 @@ func newRootCmd(version string) *cobra.Command {
 	}
 	newCmd.Flags().String("protocol", config.ProtocolHTTP, "protocol for this domain: http or grpc")
 	newCmd.Flags().StringSliceP("header", "H", []string{}, "default headers/metadata for this domain in format 'Key: Value' (can be used multiple times)")
-	// Each protocol contributes its own domain-creation flags, keeping this
-	// file free of any per-protocol knowledge.
 	addHTTPNewFlags(newCmd)
 	addGRPCNewFlags(newCmd)
 	rootCmd.AddCommand(newCmd)
@@ -92,8 +89,6 @@ func newRootCmd(version string) *cobra.Command {
 	}
 	rootCmd.AddCommand(versionCmd)
 
-	// Each protocol registers its own commands against rootCmd directly, so
-	// this file never needs to change when a protocol's command set changes.
 	registerHTTPCommands(rootCmd)
 	registerGRPCCommands(rootCmd)
 

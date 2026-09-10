@@ -1,8 +1,3 @@
-// Package grpcclient contains the low-level gRPC transport logic used to
-// call a method on a grpc-protocol domain: dialing, resolving a method via
-// server reflection, and invoking it. It knows nothing about cobra, config
-// loading beyond *config.Domain, or response formatting for the CLI - that
-// orchestration lives in pkg/handlers.
 package grpcclient
 
 import (
@@ -15,9 +10,6 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-// Dial opens a gRPC client connection to the domain's Base address
-// (host:port), using TLS with the system cert pool by default, or plaintext
-// if the domain opts in via GRPC.Insecure.
 func Dial(domain *config.Domain) (*grpc.ClientConn, error) {
 	var creds credentials.TransportCredentials
 

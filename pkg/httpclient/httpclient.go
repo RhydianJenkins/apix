@@ -1,7 +1,3 @@
-// Package httpclient contains the low-level HTTP transport logic used to
-// send requests to an http-protocol domain. It knows nothing about cobra,
-// config loading, or response formatting beyond building and executing a
-// single *http.Request - that orchestration lives in pkg/handlers.
 package httpclient
 
 import (
@@ -13,9 +9,6 @@ import (
 	"github.com/rhydianjenkins/apix/pkg/config"
 )
 
-// Do builds and sends a single HTTP request to the given domain/path,
-// applying basic auth (if configured) and the given headers on top of the
-// package's sensible defaults (Content-Type/Accept/User-Agent).
 func Do(
 	method string,
 	domain *config.Domain,

@@ -32,11 +32,10 @@ type HTTPOptions struct {
 }
 
 type GRPCOptions struct {
-	Insecure bool `yaml:"insecure,omitempty"` // use plaintext instead of TLS
+	Insecure bool `yaml:"insecure,omitempty"`
 }
 
-// IsGRPC reports whether the domain is configured for gRPC. An empty
-// Protocol defaults to HTTP for backwards compatibility.
+// An empty Protocol defaults to HTTP for backwards compatibility.
 func (d *Domain) IsGRPC() bool {
 	return d != nil && d.Protocol == ProtocolGRPC
 }

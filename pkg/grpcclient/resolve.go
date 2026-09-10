@@ -20,9 +20,6 @@ var reflectionServiceNames = map[string]bool{
 	"grpc.reflection.v1alpha.ServerReflection": true,
 }
 
-// MethodInfo describes a resolved gRPC method: its wire method path
-// ("/package.Service/Method") plus the descriptors needed to build an empty
-// request and decode the response.
 type MethodInfo struct {
 	FullName          string
 	Input             protoreflect.MessageDescriptor
@@ -31,10 +28,8 @@ type MethodInfo struct {
 	IsServerStreaming bool
 }
 
-// ResolveMethod uses server reflection to find the method matching
-// methodArg, which may be a bare method name (e.g. "GetUser") or a qualified
-// "package.Service/Method" path. It returns an error listing candidates if a
-// bare name matches methods on more than one service.
+// methodArg may be a bare method name (e.g. "GetUser") or a qualified
+// "package.Service/Method" path.
 func ResolveMethod(ctx context.Context, conn *grpc.ClientConn, methodArg string) (*MethodInfo, error) {
 	rs, err := newReflectionStream(ctx, conn)
 	if err != nil {
@@ -141,9 +136,7 @@ func findMethod(files *protoregistry.Files, serviceNames []string, methodArg str
 	return candidates[0], nil
 }
 
-// splitServiceMethod splits a "package.Service/Method" argument into its
-// service and method parts. ok is false if arg has no "/" (i.e. it's a bare
-// method name).
+// ok is false if arg has no "/" (i.e. it's a bare method name).
 func splitServiceMethod(arg string) (service, method string, ok bool) {
 	idx := strings.LastIndex(arg, "/")
 	if idx < 0 {

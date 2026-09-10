@@ -2,7 +2,7 @@
     description = "APIX (API eXecuter) is a lightweight CLI tool to manage and interact with multiple API domains.";
 
     inputs = {
-        nixpkgs.url = "github:nixos/nixpkgs/nixos-25.05";
+        nixpkgs.url = "github:nixos/nixpkgs/nixos-26.05";
         flake-utils.url = "github:numtide/flake-utils";
     };
 
@@ -10,13 +10,15 @@
         flake-utils.lib.eachDefaultSystem (system:
             let
                 pkgs = import nixpkgs { inherit system; };
+                version = pkgs.lib.strings.trim (builtins.readFile ./VERSION);
             in {
                 packages = {
                     apix = pkgs.buildGoModule {
                         pname = "apix";
-                        version = builtins.readFile ./VERSION;
+                        inherit version;
                         src = ./.;
                         vendorHash = "sha256-QFHmy/lYqPzhLxV3Cvi7p4AHtj+aiO0zggHCBNa3A28=";
+                        ldflags = [ "-X main.version=${version}" ];
                     };
                     default = self.packages.${system}.apix;
                 };

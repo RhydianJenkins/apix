@@ -1,7 +1,4 @@
-// This file owns every grpc-protocol command. Nothing outside this file
-// should know how grpc commands are built - root.go only calls
-// registerGRPCCommands and addGRPCNewFlags.
-package cmd
+package main
 
 import (
 	"fmt"
@@ -12,13 +9,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// addGRPCNewFlags attaches the flags relevant only to grpc-protocol domains
-// onto the shared `apix new` command.
 func addGRPCNewFlags(cmd *cobra.Command) {
 	cmd.Flags().Bool("insecure", false, "use plaintext instead of TLS for grpc connections (grpc only)")
 }
 
-// registerGRPCCommands adds every grpc-protocol command to rootCmd.
 func registerGRPCCommands(rootCmd *cobra.Command) {
 	rootCmd.AddCommand(newGRPCCommand())
 }

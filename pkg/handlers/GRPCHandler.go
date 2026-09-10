@@ -10,11 +10,6 @@ import (
 	"github.com/rhydianjenkins/apix/pkg/grpcclient"
 )
 
-// GRPCHandler invokes a unary gRPC method (with an empty request) on the
-// given domain and returns the response as pretty-printed JSON. It merges
-// the domain's default headers with the CLI-supplied ones (CLI headers take
-// precedence) and sends them as gRPC metadata, before delegating dialing,
-// method resolution, and invocation to pkg/grpcclient.
 func GRPCHandler(domain *config.Domain, method string, headers map[string]string) ([]byte, error) {
 	mergedHeaders := make(map[string]string)
 
