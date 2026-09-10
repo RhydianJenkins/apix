@@ -34,19 +34,71 @@ type MethodInfo struct {
 // reflection stream itself, since servers that require auth for regular
 // RPCs typically require it for reflection too.
 func ResolveMethod(ctx context.Context, conn *grpc.ClientConn, methodArg string, md map[string]string) (*MethodInfo, error) {
+	files, serviceNames, err := discoverServices(ctx, conn, md)
+	if err != nil {
+		return nil, err
+	}
+
+	return findMethod(files, serviceNames, methodArg)
+}
+
+// ListMethods returns every non-reflection method available on conn, as
+// fully qualified "package.Service/Method" names sorted alphabetically.
+// It's intended for shell completion, where each candidate must be a
+// directly usable, unambiguous `apix grpc` argument.
+func ListMethods(ctx context.Context, conn *grpc.ClientConn, md map[string]string) ([]string, error) {
+	files, serviceNames, err := discoverServices(ctx, conn, md)
+	if err != nil {
+		return nil, err
+	}
+
+	var names []string
+
+	for _, svcName := range serviceNames {
+		if reflectionServiceNames[svcName] {
+			continue
+		}
+
+		desc, err := files.FindDescriptorByName(protoreflect.FullName(svcName))
+		if err != nil {
+			continue
+		}
+
+		svcDesc, ok := desc.(protoreflect.ServiceDescriptor)
+		if !ok {
+			continue
+		}
+
+		methods := svcDesc.Methods()
+		for i := 0; i < methods.Len(); i++ {
+			names = append(names, fmt.Sprintf("%s/%s", svcName, methods.Get(i).Name()))
+		}
+	}
+
+	sort.Strings(names)
+
+	return names, nil
+}
+
+// discoverServices opens a reflection stream, lists the server's services,
+// and fetches+builds the file descriptors needed to inspect their methods.
+// md is sent as outgoing metadata on the reflection stream itself, since
+// servers that require auth for regular RPCs typically require it for
+// reflection too.
+func discoverServices(ctx context.Context, conn *grpc.ClientConn, md map[string]string) (*protoregistry.Files, []string, error) {
 	if len(md) > 0 {
 		ctx = metadata.NewOutgoingContext(ctx, metadata.New(md))
 	}
 
 	rs, err := newReflectionStream(ctx, conn)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer rs.close()
 
 	serviceNames, err := rs.listServices()
 	if err != nil {
-		return nil, fmt.Errorf("failed to list services via reflection: %w", err)
+		return nil, nil, fmt.Errorf("failed to list services via reflection: %w", err)
 	}
 
 	fileProtos := make(map[string]*descriptorpb.FileDescriptorProto)
@@ -58,7 +110,7 @@ func ResolveMethod(ctx context.Context, conn *grpc.ClientConn, methodArg string,
 
 		files, err := rs.fileContainingSymbol(svc)
 		if err != nil {
-			return nil, fmt.Errorf("failed to fetch descriptors for service %q: %w", svc, err)
+			return nil, nil, fmt.Errorf("failed to fetch descriptors for service %q: %w", svc, err)
 		}
 
 		for _, fd := range files {
@@ -73,10 +125,10 @@ func ResolveMethod(ctx context.Context, conn *grpc.ClientConn, methodArg string,
 
 	files, err := protodesc.NewFiles(fdSet)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build descriptors from reflection response: %w", err)
+		return nil, nil, fmt.Errorf("failed to build descriptors from reflection response: %w", err)
 	}
 
-	return findMethod(files, serviceNames, methodArg)
+	return files, serviceNames, nil
 }
 
 func findMethod(files *protoregistry.Files, serviceNames []string, methodArg string) (*MethodInfo, error) {
