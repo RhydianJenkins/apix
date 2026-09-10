@@ -17,7 +17,7 @@ func ShowHandler(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	pathItem, err := oas.GetPathItem(path, domain.OpenAPISpecPath)
+	pathItem, err := oas.GetPathItem(path, domain.HTTP.OpenAPISpecPath)
 
 	if err != nil {
 		fmt.Printf("%s", err)

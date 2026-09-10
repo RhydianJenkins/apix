@@ -8,23 +8,37 @@ import (
 )
 
 func ListHandler(cmd *cobra.Command, args []string) {
-	var config = config.LoadConfig()
+	var cfg = config.LoadConfig()
 	var verbose, _ = cmd.Flags().GetBool("verbose")
 
-	for name := range config.Domains {
+	for name := range cfg.Domains {
 		marker := ""
-		if name == config.Active {
+		if name == cfg.Active {
 			marker = " *"
 		}
 
 		fmt.Println(name + marker)
 
 		if verbose {
-			domain := config.Domains[name]
+			domain := cfg.Domains[name]
+			protocol := domain.Protocol
+			if protocol == "" {
+				protocol = config.ProtocolHTTP
+			}
+
 			fmt.Printf("\tBase: %s\n", domain.Base)
-			fmt.Printf("\tUser: %s\n", domain.User)
-			fmt.Printf("\tPass: %s\n", domain.Pass)
-			fmt.Printf("\tOAS: %s\n", domain.OpenAPISpecPath)
+			fmt.Printf("\tProtocol: %s\n", protocol)
+
+			if domain.HTTP != nil {
+				fmt.Printf("\tUser: %s\n", domain.HTTP.User)
+				fmt.Printf("\tPass: %s\n", domain.HTTP.Pass)
+				fmt.Printf("\tOAS: %s\n", domain.HTTP.OpenAPISpecPath)
+			}
+
+			if domain.GRPC != nil {
+				fmt.Printf("\tInsecure: %t\n", domain.GRPC.Insecure)
+			}
+
 			if len(domain.Headers) > 0 {
 				fmt.Printf("\tHeaders:\n")
 				for k, v := range domain.Headers {

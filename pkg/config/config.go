@@ -10,13 +10,35 @@ import (
 
 var CfgPath = filepath.Join(os.Getenv("HOME"), ".apix.yaml")
 
+const (
+	ProtocolHTTP = "http"
+	ProtocolGRPC = "grpc"
+)
+
 type Domain struct {
-	Base            string            `yaml:"base"`
-	Name            string            `yaml:"name"`
-	Pass            string            `yaml:"pass,omitempty"`
-	User            string            `yaml:"user,omitempty"`
-	OpenAPISpecPath string            `yaml:"openapispecpath,omitempty"`
-	Headers         map[string]string `yaml:"headers,omitempty"`
+	Base     string            `yaml:"base"`
+	Name     string            `yaml:"name"`
+	Protocol string            `yaml:"protocol,omitempty"` // "http" (default, empty) | "grpc"
+	Headers  map[string]string `yaml:"headers,omitempty"`  // HTTP headers or gRPC metadata, depending on Protocol
+
+	HTTP *HTTPOptions `yaml:"http,omitempty"`
+	GRPC *GRPCOptions `yaml:"grpc,omitempty"`
+}
+
+type HTTPOptions struct {
+	User            string `yaml:"user,omitempty"`
+	Pass            string `yaml:"pass,omitempty"`
+	OpenAPISpecPath string `yaml:"openapispecpath,omitempty"`
+}
+
+type GRPCOptions struct {
+	Insecure bool `yaml:"insecure,omitempty"` // use plaintext instead of TLS
+}
+
+// IsGRPC reports whether the domain is configured for gRPC. An empty
+// Protocol defaults to HTTP for backwards compatibility.
+func (d *Domain) IsGRPC() bool {
+	return d != nil && d.Protocol == ProtocolGRPC
 }
 
 type config struct {

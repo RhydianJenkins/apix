@@ -64,8 +64,6 @@ func TestPost(t *testing.T) {
 	domain := &config.Domain{
 		Base: server.URL,
 		Name: "testapi",
-		Pass: "",
-		User: "",
 	}
 
 	path := "/test"
