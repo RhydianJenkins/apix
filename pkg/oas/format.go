@@ -7,8 +7,6 @@ import (
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 )
 
-// FormatPathItemSummary renders a human-readable summary of every operation
-// defined for a path, suitable for printing directly to the terminal.
 func FormatPathItemSummary(path string, pathItem *v3.PathItem) string {
 	var b strings.Builder
 

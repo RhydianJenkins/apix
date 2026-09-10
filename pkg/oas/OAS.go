@@ -45,10 +45,6 @@ func GetEndpointsValidArgs(method, specSource string) ([]string, error) {
 	return endpoints, nil
 }
 
-// GetPathItem loads the given OpenAPI spec and returns the PathItem describing
-// the operations available at the given path. It returns a descriptive error
-// if no spec is connected, the spec fails to load/parse, or the path does not
-// exist in the spec.
 func GetPathItem(path, specSource string) (*v3.PathItem, error) {
 	if specSource == "" {
 		return nil, fmt.Errorf("No OpenAPI spec is connected to the active domain.\nConnect one with `apix new --oas <path/url>` or `apix edit`.\n")

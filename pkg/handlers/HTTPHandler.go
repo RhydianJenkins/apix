@@ -9,10 +9,6 @@ import (
 	"github.com/rhydianjenkins/apix/pkg/httpclient"
 )
 
-// HTTPHandler sends an HTTP request to the given domain/path and returns the
-// response body. It merges the domain's default headers with the CLI-supplied
-// ones (CLI headers take precedence) before delegating the actual request to
-// pkg/httpclient.
 func HTTPHandler(
 	method string,
 	domain *config.Domain,

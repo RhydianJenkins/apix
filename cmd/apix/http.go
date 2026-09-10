@@ -1,9 +1,4 @@
-// This file owns every http-protocol command: the verb commands (get, post,
-// put, patch, delete) and `show` (OpenAPI-spec browsing, which only makes
-// sense for http domains). Nothing outside this file should know how http
-// commands are built - root.go only calls registerHTTPCommands and
-// addHTTPNewFlags.
-package cmd
+package main
 
 import (
 	"fmt"
@@ -17,15 +12,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// addHTTPNewFlags attaches the flags relevant only to http-protocol domains
-// onto the shared `apix new` command.
 func addHTTPNewFlags(cmd *cobra.Command) {
 	cmd.Flags().String("user", "", "basic auth username to use for this domain (http only)")
 	cmd.Flags().String("pass", "", "basic auth password to use for this domain (http only)")
 	cmd.Flags().String("oas", "", "path to the oas spec for this endpoint (http only)")
 }
 
-// registerHTTPCommands adds every http-protocol command to rootCmd.
 func registerHTTPCommands(rootCmd *cobra.Command) {
 	rootCmd.AddCommand(newShowCommand())
 

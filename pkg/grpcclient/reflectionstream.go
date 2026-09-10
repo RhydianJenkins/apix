@@ -30,7 +30,6 @@ func (r *reflectionStream) close() {
 	_ = r.stream.CloseSend()
 }
 
-// listServices returns the full names of every service the server exposes.
 func (r *reflectionStream) listServices() ([]string, error) {
 	resp, err := r.send(&reflectionpb.ServerReflectionRequest{
 		MessageRequest: &reflectionpb.ServerReflectionRequest_ListServices{},
@@ -52,9 +51,9 @@ func (r *reflectionStream) listServices() ([]string, error) {
 	return services, nil
 }
 
-// fileContainingSymbol returns the file descriptors for the file defining
-// symbol (a type, service, or method full name), plus all of its transitive
-// dependencies not already returned earlier on this stream.
+// symbol is a type, service, or method full name. The response includes its
+// transitive dependencies, but not ones already returned earlier on this
+// stream.
 func (r *reflectionStream) fileContainingSymbol(symbol string) ([]*descriptorpb.FileDescriptorProto, error) {
 	resp, err := r.send(&reflectionpb.ServerReflectionRequest{
 		MessageRequest: &reflectionpb.ServerReflectionRequest_FileContainingSymbol{

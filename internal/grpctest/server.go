@@ -1,7 +1,3 @@
-// Package grpctest provides a minimal in-process gRPC server, built purely
-// from hand-constructed descriptors (no protoc/generated code required), so
-// pkg/grpcclient and pkg/handlers tests can exercise apix's reflection-based
-// method resolution and invocation end-to-end.
 package grpctest
 
 import (
@@ -21,27 +17,19 @@ import (
 	"google.golang.org/protobuf/types/dynamicpb"
 )
 
-// Names of the single service/method this fake server exposes.
 const (
 	ServiceName = "testpkg.TestService"
 	MethodName  = "GetReply"
 )
 
-// Server is a real, listening gRPC server exposing exactly one unary
-// method: testpkg.TestService/GetReply(Empty) returns (Reply), where Reply
-// has a single string field "message".
 type Server struct {
 	Listener net.Listener
 
 	grpcSrv *grpc.Server
 
-	// lastMetadata captures the incoming metadata of the most recently
-	// handled call, for tests asserting on metadata/header propagation.
 	lastMetadata metadata.MD
 }
 
-// NewServer builds the server and starts it listening on a local ephemeral
-// port, but does not yet accept connections - call Serve to do that.
 func NewServer() (*Server, error) {
 	fileDesc, replyDesc, emptyDesc, err := buildDescriptors()
 	if err != nil {
@@ -95,24 +83,18 @@ func NewServer() (*Server, error) {
 	return s, nil
 }
 
-// Serve blocks accepting connections; run it in a goroutine.
 func (s *Server) Serve() error {
 	return s.grpcSrv.Serve(s.Listener)
 }
 
-// Addr returns the "host:port" the server is listening on, suitable for use
-// as a config.Domain.Base.
 func (s *Server) Addr() string {
 	return s.Listener.Addr().String()
 }
 
-// LastMetadata returns the incoming gRPC metadata captured on the most
-// recent handled call, or nil if no call has been handled yet.
 func (s *Server) LastMetadata() metadata.MD {
 	return s.lastMetadata
 }
 
-// Close stops the server and releases its listener.
 func (s *Server) Close() {
 	s.grpcSrv.Stop()
 }
