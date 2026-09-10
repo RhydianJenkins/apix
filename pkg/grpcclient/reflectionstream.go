@@ -10,9 +10,8 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-// reflectionStream wraps the bidi-streaming ServerReflectionInfo RPC as a
-// simple request/response helper, since apix only ever sends one request at
-// a time and waits for its matching response.
+// apix only ever sends one request on the stream at a time and waits for
+// its matching response before sending the next.
 type reflectionStream struct {
 	stream reflectionpb.ServerReflection_ServerReflectionInfoClient
 }

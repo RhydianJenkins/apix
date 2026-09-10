@@ -46,10 +46,8 @@ func Dial(domain *config.Domain) (*grpc.ClientConn, error) {
 	return conn, nil
 }
 
-// grpcTarget returns the dial target for domain: a host-only domain.Base
-// combined with domain.GRPC.Port (e.g. "localhost" + 50051 ->
-// "localhost:50051"). base must never include a port itself - the port is
-// always specified separately via --port / grpc.port.
+// base must never include a port itself - the port is always specified
+// separately via --port / grpc.port.
 func grpcTarget(domain *config.Domain) (string, error) {
 	if strings.Contains(domain.Base, ":") {
 		return "", fmt.Errorf("base %q must not include a port; set it separately with --port or grpc.port instead", domain.Base)
