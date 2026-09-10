@@ -48,7 +48,7 @@ func NewServer() (*Server, error) {
 	}
 
 	s := &Server{Listener: lis}
-	s.grpcSrv = grpc.NewServer()
+	s.grpcSrv = grpc.NewServer(grpc.StreamInterceptor(s.streamInterceptor))
 
 	s.grpcSrv.RegisterService(&grpc.ServiceDesc{
 		ServiceName: ServiceName,
@@ -121,6 +121,17 @@ func (s *Server) Port() int {
 
 func (s *Server) LastMetadata() metadata.MD {
 	return s.lastMetadata
+}
+
+// streamInterceptor records incoming metadata for streaming RPCs (e.g. the
+// reflection service's ServerReflectionInfo), so tests can assert that
+// metadata reaches reflection calls, not just unary ones.
+func (s *Server) streamInterceptor(srv any, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	if md, ok := metadata.FromIncomingContext(ss.Context()); ok {
+		s.lastMetadata = md
+	}
+
+	return handler(srv, ss)
 }
 
 func (s *Server) Close() {

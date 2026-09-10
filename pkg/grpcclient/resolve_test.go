@@ -45,7 +45,7 @@ func TestResolveMethod_BareName(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	info, err := grpcclient.ResolveMethod(ctx, conn, grpctest.MethodName)
+	info, err := grpcclient.ResolveMethod(ctx, conn, grpctest.MethodName, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -67,7 +67,7 @@ func TestResolveMethod_Qualified(t *testing.T) {
 	defer cancel()
 
 	qualified := grpctest.ServiceName + "/" + grpctest.MethodName
-	info, err := grpcclient.ResolveMethod(ctx, conn, qualified)
+	info, err := grpcclient.ResolveMethod(ctx, conn, qualified, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -83,7 +83,7 @@ func TestResolveMethod_NotFound(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	_, err := grpcclient.ResolveMethod(ctx, conn, "DoesNotExist")
+	_, err := grpcclient.ResolveMethod(ctx, conn, "DoesNotExist", nil)
 	if err == nil {
 		t.Fatal("expected an error for an unknown method, got nil")
 	}
@@ -99,8 +99,29 @@ func TestResolveMethod_ExcludesReflectionService(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	_, err := grpcclient.ResolveMethod(ctx, conn, "ServerReflectionInfo")
+	_, err := grpcclient.ResolveMethod(ctx, conn, "ServerReflectionInfo", nil)
 	if err == nil {
 		t.Fatal("expected the reflection service's own method to be excluded from resolution")
+	}
+}
+
+// Reflection is a separate RPC from the eventual method call - servers that
+// require auth for regular RPCs typically require it for reflection too, so
+// metadata passed to ResolveMethod must reach the reflection stream itself.
+func TestResolveMethod_SendsMetadata(t *testing.T) {
+	srv, conn := startTestServer(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err := grpcclient.ResolveMethod(ctx, conn, grpctest.MethodName, map[string]string{"authorization": "Bearer test-token"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	md := srv.LastMetadata()
+	values := md.Get("authorization")
+	if len(values) == 0 || values[0] != "Bearer test-token" {
+		t.Errorf("expected metadata authorization=Bearer test-token to reach the reflection call, got: %v", values)
 	}
 }
