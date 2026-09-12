@@ -48,7 +48,7 @@ func newRootCmd(version string) *cobra.Command {
 		Args:  cobra.ExactArgs(0),
 		Run:   handlers.EditHandler,
 	}
-	editCmd.Flags().Bool("verbose", false, "")
+	editCmd.Flags().BoolP("verbose", "v", false, "")
 	rootCmd.AddCommand(editCmd)
 
 	listCmd := &cobra.Command{
@@ -57,7 +57,7 @@ func newRootCmd(version string) *cobra.Command {
 		Args:  cobra.ExactArgs(0),
 		Run:   handlers.ListHandler,
 	}
-	listCmd.Flags().Bool("verbose", false, "Also list all information about each domain")
+	listCmd.Flags().BoolP("verbose", "v", false, "Also list all information about each domain")
 	rootCmd.AddCommand(listCmd)
 
 	switchCmd := &cobra.Command{
