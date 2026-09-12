@@ -14,7 +14,7 @@ func ListHandler(cmd *cobra.Command, args []string) {
 	for name := range cfg.Domains {
 		marker := ""
 		if name == cfg.Active {
-			marker = " *"
+			marker = " [active]"
 		}
 
 		fmt.Println(name + marker)
