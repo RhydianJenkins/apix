@@ -27,6 +27,13 @@ func newReflectionStream(ctx context.Context, conn *grpc.ClientConn) (*reflectio
 
 func (r *reflectionStream) close() {
 	_ = r.stream.CloseSend()
+
+	// flush
+	for {
+		if _, err := r.stream.Recv(); err != nil {
+			return
+		}
+	}
 }
 
 func (r *reflectionStream) listServices() ([]string, error) {
