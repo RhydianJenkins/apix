@@ -21,13 +21,9 @@ func ListHandler(cmd *cobra.Command, args []string) {
 
 		if verbose {
 			domain := cfg.Domains[name]
-			protocol := domain.Protocol
-			if protocol == "" {
-				protocol = config.ProtocolHTTP
-			}
 
 			fmt.Printf("\tBase: %s\n", domain.Base)
-			fmt.Printf("\tProtocol: %s\n", protocol)
+			fmt.Printf("\tProtocol: %s\n", domain.Protocol())
 
 			if domain.HTTP != nil {
 				fmt.Printf("\tUser: %s\n", domain.HTTP.User)

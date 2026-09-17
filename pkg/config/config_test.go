@@ -12,10 +12,10 @@ func TestDomain_IsGRPC(t *testing.T) {
 		domain *Domain
 		want   bool
 	}{
-		"nil domain":               {nil, false},
-		"empty protocol (default)": {&Domain{}, false},
-		"explicit http":            {&Domain{Protocol: ProtocolHTTP}, false},
-		"explicit grpc":            {&Domain{Protocol: ProtocolGRPC}, true},
+		"nil domain":       {nil, false},
+		"no options set":   {&Domain{}, false},
+		"http options set": {&Domain{HTTP: &HTTPOptions{}}, false},
+		"grpc options set": {&Domain{GRPC: &GRPCOptions{}}, true},
 	}
 
 	for name, tc := range tests {
@@ -33,10 +33,9 @@ func TestSetAndLoadDomain_HTTP(t *testing.T) {
 	viper.Reset()
 
 	domain := &Domain{
-		Name:     "http-api",
-		Base:     "https://api.example.com",
-		Protocol: ProtocolHTTP,
-		Headers:  map[string]string{"X-Test": "value"},
+		Name:    "http-api",
+		Base:    "https://api.example.com",
+		Headers: map[string]string{"X-Test": "value"},
 		HTTP: &HTTPOptions{
 			User:            "foo",
 			Pass:            "bar",
@@ -83,9 +82,8 @@ func TestSetAndLoadDomain_GRPC(t *testing.T) {
 	viper.Reset()
 
 	domain := &Domain{
-		Name:     "grpc-api",
-		Base:     "localhost",
-		Protocol: ProtocolGRPC,
+		Name: "grpc-api",
+		Base: "localhost",
 		GRPC: &GRPCOptions{
 			Insecure: true,
 			Port:     50051,

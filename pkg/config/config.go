@@ -16,10 +16,9 @@ const (
 )
 
 type Domain struct {
-	Base     string            `yaml:"base"`
-	Name     string            `yaml:"name"`
-	Protocol string            `yaml:"protocol,omitempty"` // "http" (default, empty) | "grpc"
-	Headers  map[string]string `yaml:"headers,omitempty"`  // HTTP headers or gRPC metadata, depending on Protocol
+	Base    string            `yaml:"base"`
+	Name    string            `yaml:"-"`                 // inferred from the domain's key in the domains map, never persisted
+	Headers map[string]string `yaml:"headers,omitempty"` // HTTP headers or gRPC metadata, depending on Protocol()
 
 	HTTP *HTTPOptions `yaml:"http,omitempty"`
 	GRPC *GRPCOptions `yaml:"grpc,omitempty"`
@@ -37,9 +36,15 @@ type GRPCOptions struct {
 	Port     int  `yaml:"port,omitempty"` // if set, combined with Base (host-only) as "host:port"
 }
 
-// An empty Protocol defaults to HTTP for backwards compatibility.
 func (d *Domain) IsGRPC() bool {
-	return d != nil && d.Protocol == ProtocolGRPC
+	return d != nil && d.GRPC != nil
+}
+
+func (d *Domain) Protocol() string {
+	if d.IsGRPC() {
+		return ProtocolGRPC
+	}
+	return ProtocolHTTP
 }
 
 type config struct {
@@ -67,6 +72,7 @@ func SetActiveName(activeName string) error {
 func GetActiveDomain() *Domain {
 	cfg := LoadConfig()
 	domain := cfg.Domains[cfg.Active]
+	domain.Name = cfg.Active
 
 	return &domain
 }
@@ -79,6 +85,8 @@ func LoadDomain(name string) (*Domain, error) {
 	if !ok {
 		return nil, fmt.Errorf("domain %q not found", name)
 	}
+
+	domain.Name = name
 
 	return &domain, nil
 }

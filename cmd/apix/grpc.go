@@ -30,7 +30,7 @@ func newGRPCCommand() *cobra.Command {
 			activeDomain := config.GetActiveDomain()
 
 			if !activeDomain.IsGRPC() {
-				fmt.Fprintf(os.Stderr, "active domain %q is not configured for grpc (protocol %q). Use `apix new --protocol grpc` or `apix edit`.\n", activeDomain.Name, activeDomain.Protocol)
+				fmt.Fprintf(os.Stderr, "active domain %q is not configured for grpc (protocol %q). Use `apix new --protocol grpc` or `apix edit`.\n", activeDomain.Name, activeDomain.Protocol())
 				os.Exit(1)
 			}
 

@@ -28,10 +28,9 @@ func NewHandler(cmd *cobra.Command, args []string) {
 	}
 
 	var domain = &config.Domain{
-		Base:     base,
-		Name:     name,
-		Protocol: protocol,
-		Headers:  headerMap,
+		Base:    base,
+		Name:    name,
+		Headers: headerMap,
 	}
 
 	if protocol == config.ProtocolGRPC {
@@ -83,7 +82,7 @@ func NewHandler(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if domain.Protocol == config.ProtocolGRPC {
+	if protocol == config.ProtocolGRPC {
 		if strings.Contains(domain.Base, ":") {
 			fmt.Fprintf(os.Stderr, "base %q must not include a port; set it separately with --port instead\n", domain.Base)
 			os.Exit(1)
