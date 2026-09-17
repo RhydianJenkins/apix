@@ -1,16 +1,14 @@
 # APIX (API eXecuter)
 
-**apix** is a CLI HTTP client that manages requests across multiple API environments.
+**apix** is a CLI HTTP and gRPC client that manages requests across multiple API environments.
 
-It handles authentication, domain switching, and [OpenAPI Specification (OAS)](https://swagger.io/specification/) integration with a simple YAML config file.
+It handles authentication, domain switching, and [OpenAPI Specification (OAS)](https://swagger.io/specification/) (when using http) or [server reflection](https://grpc.io/docs/guides/reflection/) (when using gRPC).
 
 ## ✨ Features
 
-- Manage API domains
-- Store credentials in `yaml`
-- OAS support
-- gRPC support (via server reflection)
-- Endpoint `<tab>` completions
+- Manage multiple API domains under one tool
+- Simple declarative `yaml` config
+- Endpoint `<tab>` completions via OAS or reflection
 
 ## 📦 Getting Started
 
@@ -18,18 +16,15 @@ It handles authentication, domain switching, and [OpenAPI Specification (OAS)](h
 go install github.com/rhydianjenkins/apix@latest
 
 # ...or with nix
-nix profile install github:rhydianjenkins/apix
+nix run github:rhydianjenkins/apix
 ```
 
 <details>
 <summary>Want to <strong>build from source instead?</strong></summary>
 
 ```sh
-# fetch the project
 git clone https://github.com/rhydianjenkins/apix && cd apix
-
-# then build from source
-go build -o apix && ./apix
+make build && ./apix
 ```
 
 </details>
@@ -162,5 +157,21 @@ cat req_body.json | apix grpc mypkg.UserService/GetUser
 ```
 
 `apix` uses [server reflection](https://grpc.io/docs/guides/reflection/) to discover services and methods, so the target server must have reflection enabled.
+
+</details>
+
+<details>
+<summary><strong>How do I send headers?</strong></summary>
+
+You can add a headers attribute to the `yaml` config file. Edit it with `apix edit`, then add the following to the domain you want to send headers with:
+
+```yaml
+...
+domains:
+  my-domain:
+    ...
+    headers:
+      x-my-header: foobar
+```
 
 </details>
