@@ -53,16 +53,16 @@ func newShowCommand() *cobra.Command {
 
 func createHTTPCommand(method string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     fmt.Sprintf("%s [path]", strings.ToLower(method)),
-		Short:   fmt.Sprintf("Send a %s request to the active domain", method),
-		Example: fmt.Sprintf("apix %s /users/123\ncat req_body.json | apix %s /users/123", strings.ToLower(method), strings.ToLower(method)),
-		Args:    cobra.RangeArgs(1, 2),
-		Run: func(cmd *cobra.Command, args []string) {
+		Use:          fmt.Sprintf("%s [path]", strings.ToLower(method)),
+		Short:        fmt.Sprintf("Send a %s request to the active domain", method),
+		Example:      fmt.Sprintf("apix %s /users/123\ncat req_body.json | apix %s /users/123", strings.ToLower(method), strings.ToLower(method)),
+		Args:         cobra.RangeArgs(1, 2),
+		SilenceUsage: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
 			activeDomain := config.GetActiveDomain()
 
 			if activeDomain.IsGRPC() {
-				fmt.Fprintf(os.Stderr, "active domain %q is configured for grpc, not http. Use `apix grpc` instead.\n", activeDomain.Name)
-				os.Exit(1)
+				return fmt.Errorf("active domain %q is configured for grpc, not http. Use `apix grpc` instead", activeDomain.Name)
 			}
 
 			input, _ := getStdIn()
@@ -77,11 +77,13 @@ func createHTTPCommand(method string) *cobra.Command {
 				headerMap,
 			)
 
+			fmt.Printf("%s", string(body))
+
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error making %s request: %v\n", method, err)
+				return fmt.Errorf("error making %s request: %w", method, err)
 			}
 
-			fmt.Printf("%s", string(body))
+			return nil
 		},
 		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 			activeDomain := config.GetActiveDomain()

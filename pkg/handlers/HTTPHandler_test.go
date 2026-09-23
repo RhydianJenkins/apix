@@ -84,6 +84,31 @@ func TestPost(t *testing.T) {
 	}
 }
 
+func TestPost_NonSuccessStatus(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte(`{"error": "not found"}`))
+	})
+
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	domain := &config.Domain{
+		Base: server.URL,
+		Name: "testapi",
+	}
+
+	body, err := HTTPHandler("GET", domain, "/missing", nil, nil)
+
+	if err == nil {
+		t.Fatal("expected an error for a 404 response, got nil")
+	}
+
+	if body == nil || string(body) != `{"error": "not found"}` {
+		t.Errorf("expected response body to still be returned alongside the error, got %q", string(body))
+	}
+}
+
 func TestHeaderMerging(t *testing.T) {
 	capturedHeaders := make(map[string][]string)
 

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/rhydianjenkins/apix/pkg/config"
@@ -22,16 +21,16 @@ func registerGRPCCommands(rootCmd *cobra.Command) {
 
 func newGRPCCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "grpc [method]",
-		Short:   "Invoke a unary gRPC method on the active domain",
-		Example: "apix grpc GetUser\napix grpc mypkg.UserService/GetUser\ncat req_body.json | apix grpc GetUser",
-		Args:    cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
+		Use:          "grpc [method]",
+		Short:        "Invoke a unary gRPC method on the active domain",
+		Example:      "apix grpc GetUser\napix grpc mypkg.UserService/GetUser\ncat req_body.json | apix grpc GetUser",
+		Args:         cobra.ExactArgs(1),
+		SilenceUsage: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
 			activeDomain := config.GetActiveDomain()
 
 			if !activeDomain.IsGRPC() {
-				fmt.Fprintf(os.Stderr, "active domain %q is not configured for grpc (protocol %q). Use `apix new --protocol grpc` or `apix edit`.\n", activeDomain.Name, activeDomain.Protocol())
-				os.Exit(1)
+				return fmt.Errorf("active domain %q is not configured for grpc (protocol %q). Use `apix new --protocol grpc` or `apix edit`", activeDomain.Name, activeDomain.Protocol())
 			}
 
 			input, _ := getStdIn()
@@ -41,11 +40,11 @@ func newGRPCCommand() *cobra.Command {
 			body, err := handlers.GRPCHandler(activeDomain, args[0], input, headerMap)
 
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error making grpc call: %v\n", err)
-				return
+				return fmt.Errorf("error making grpc call: %w", err)
 			}
 
 			fmt.Printf("%s", string(body))
+			return nil
 		},
 		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 			activeDomain := config.GetActiveDomain()

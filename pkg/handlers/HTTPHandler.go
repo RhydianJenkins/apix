@@ -43,5 +43,9 @@ func HTTPHandler(
 		}
 	}
 
+	if res.StatusCode >= 400 {
+		return resBody, fmt.Errorf("%s %s returned status %d", method, path, res.StatusCode)
+	}
+
 	return resBody, nil
 }
