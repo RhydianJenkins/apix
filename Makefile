@@ -7,7 +7,10 @@ build: ## Build apix into a binary
 test: ## Run all tests
 	@go test -v ./...
 
-release: build test ## Tag and push a release using the version in VERSION
+vet: ## Run go vet
+	@go vet ./...
+
+release: build vet test ## Tag and push a release using the version in VERSION
 	@version=v$(shell cat VERSION); \
 	if git rev-parse "$$version" >/dev/null 2>&1; then \
 		echo "Tag $$version already exists"; \
