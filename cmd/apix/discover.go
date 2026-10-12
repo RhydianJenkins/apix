@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/rhydianjenkins/apix/pkg/config"
-	"github.com/rhydianjenkins/apix/pkg/grpcclient"
-	"github.com/rhydianjenkins/apix/pkg/oas"
+	"github.com/rhydianjenkins/apix/v2/pkg/config"
+	"github.com/rhydianjenkins/apix/v2/pkg/grpcclient"
+	"github.com/rhydianjenkins/apix/v2/pkg/oas"
 	"github.com/spf13/cobra"
 )
 

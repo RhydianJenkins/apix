@@ -14,7 +14,7 @@ import (
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
-	"github.com/rhydianjenkins/apix/pkg/config"
+	"github.com/rhydianjenkins/apix/v2/pkg/config"
 )
 
 type EndpointInfo struct {

@@ -3,7 +3,7 @@ package grpcclient
 import (
 	"testing"
 
-	"github.com/rhydianjenkins/apix/pkg/config"
+	"github.com/rhydianjenkins/apix/v2/pkg/config"
 )
 
 func TestGRPCTarget(t *testing.T) {

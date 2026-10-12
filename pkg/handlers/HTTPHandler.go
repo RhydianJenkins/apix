@@ -6,8 +6,8 @@ import (
 	"maps"
 	"os"
 
-	"github.com/rhydianjenkins/apix/pkg/config"
-	"github.com/rhydianjenkins/apix/pkg/httpclient"
+	"github.com/rhydianjenkins/apix/v2/pkg/config"
+	"github.com/rhydianjenkins/apix/v2/pkg/httpclient"
 )
 
 func HTTPHandler(

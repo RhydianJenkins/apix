@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/rhydianjenkins/apix/pkg/config"
-	"github.com/rhydianjenkins/apix/pkg/handlers"
+	"github.com/rhydianjenkins/apix/v2/pkg/config"
+	"github.com/rhydianjenkins/apix/v2/pkg/handlers"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )

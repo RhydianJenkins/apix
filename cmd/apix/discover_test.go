@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rhydianjenkins/apix/internal/grpctest"
-	"github.com/rhydianjenkins/apix/pkg/config"
+	"github.com/rhydianjenkins/apix/v2/internal/grpctest"
+	"github.com/rhydianjenkins/apix/v2/pkg/config"
 )
 
 func captureStdout(t *testing.T, fn func()) string {

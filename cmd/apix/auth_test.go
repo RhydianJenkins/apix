@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/rhydianjenkins/apix/pkg/config"
+	"github.com/rhydianjenkins/apix/v2/pkg/config"
 )
 
 func TestAuthCommand_ActiveDomain(t *testing.T) {

@@ -1,4 +1,4 @@
-module github.com/rhydianjenkins/apix
+module github.com/rhydianjenkins/apix/v2
 
 go 1.25.0
 

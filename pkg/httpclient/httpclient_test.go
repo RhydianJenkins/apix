@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/rhydianjenkins/apix/pkg/config"
-	"github.com/rhydianjenkins/apix/pkg/httpclient"
+	"github.com/rhydianjenkins/apix/v2/pkg/config"
+	"github.com/rhydianjenkins/apix/v2/pkg/httpclient"
 )
 
 func TestDo_WithSeparatePort(t *testing.T) {

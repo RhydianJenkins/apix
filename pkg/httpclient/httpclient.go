@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/rhydianjenkins/apix/pkg/config"
+	"github.com/rhydianjenkins/apix/v2/pkg/config"
 )
 
 func Do(
