@@ -24,7 +24,7 @@ nix run github:rhydianjenkins/apix
 
 ```sh
 git clone https://github.com/rhydianjenkins/apix && cd apix
-make build && ./apix
+nix run .#build && ./apix
 ```
 
 </details>
