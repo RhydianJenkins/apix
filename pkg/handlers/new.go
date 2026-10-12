@@ -21,6 +21,8 @@ func NewHandler(cmd *cobra.Command, args []string) {
 	port, _ := cmd.Flags().GetInt("port")
 	headers, _ := cmd.Flags().GetStringSlice("header")
 	headerMap := ParseHeaders(headers)
+	authCommand, _ := cmd.Flags().GetString("auth-command")
+	authHeader, _ := cmd.Flags().GetString("auth-header")
 
 	if protocol != config.ProtocolHTTP && protocol != config.ProtocolGRPC {
 		fmt.Fprintf(os.Stderr, "invalid --protocol %q: must be %q or %q\n", protocol, config.ProtocolHTTP, config.ProtocolGRPC)
@@ -31,6 +33,13 @@ func NewHandler(cmd *cobra.Command, args []string) {
 		Base:    base,
 		Name:    name,
 		Headers: headerMap,
+	}
+
+	if authCommand != "" || authHeader != "" {
+		domain.Auth = &config.AuthOptions{
+			Command: authCommand,
+			Header:  authHeader,
+		}
 	}
 
 	if protocol == config.ProtocolGRPC {
@@ -72,6 +81,17 @@ func NewHandler(cmd *cobra.Command, args []string) {
 			}
 			if domain.HTTP.Port == 0 {
 				domain.HTTP.Port = existingDomain.HTTP.Port
+			}
+		}
+
+		if domain.Auth == nil {
+			domain.Auth = existingDomain.Auth
+		} else if existingDomain.Auth != nil {
+			if domain.Auth.Command == "" {
+				domain.Auth.Command = existingDomain.Auth.Command
+			}
+			if domain.Auth.Header == "" {
+				domain.Auth.Header = existingDomain.Auth.Header
 			}
 		}
 

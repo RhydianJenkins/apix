@@ -44,6 +44,7 @@ func newRootCmd(version string) *cobra.Command {
 	newCmd.Flags().Int("port", 0, "port to connect to; base must be host-only when set (required for grpc, optional for http)")
 	addHTTPNewFlags(newCmd)
 	addGRPCNewFlags(newCmd)
+	addAuthNewFlags(newCmd)
 	rootCmd.AddCommand(newCmd)
 
 	editCmd := &cobra.Command{
@@ -98,6 +99,7 @@ func newRootCmd(version string) *cobra.Command {
 
 	registerHTTPCommands(rootCmd)
 	registerGRPCCommands(rootCmd)
+	registerAuthCommands(rootCmd)
 
 	return rootCmd
 }

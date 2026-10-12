@@ -45,6 +45,7 @@ Usage:
   apix [command]
 
 Available Commands:
+  auth        Run a domain's configured auth command (see `auth.command` in config)
   completion  Generate the autocompletion script for the specified shell
   delete      Send a DELETE request to the active domain
   discover    List the endpoints or gRPC methods available on the active domain
@@ -204,5 +205,36 @@ domains:
     headers:
       x-my-header: foobar
 ```
+
+</details>
+
+<details>
+<summary><strong>How do I configure auth?</strong></summary>
+
+`apix` is unopinionated about how a domain's auth works - add an `auth.command` to the domain in config (`apix edit`, or `apix new ... --auth-command '<cmd>'`) and run `apix auth` whenever you need to (re-)authenticate:
+
+```sh
+apix auth              # runs auth.command for the active domain
+apix auth my-domain    # ...or for a named domain, without switching to it
+apix auth --all        # runs it for every domain that has one configured
+```
+
+`command` is run through `sh -c`, with stdin/stderr inherited from your terminal - so interactive flows (an OAuth CLI, a "approve on your phone" prompt, etc.) work as expected. What happens to its stdout depends on whether `header` is set:
+
+```yaml
+domains:
+  # command's stdout becomes the authorization header/metadata value
+  junifer-uat:
+    auth:
+      command: "oauth-cli login --client junifer | jq -r '\"Bearer \" + .access_token'"
+      header: authorization
+
+  # no header - command is just run for its side effects (e.g. allow-listing your IP)
+  some-ip-gated-api:
+    auth:
+      command: "curl -sf -X POST https://admin.example.com/allowlist/me"
+```
+
+If a request to a domain with `auth.command` configured gets back a 401 (http) or an Unauthenticated status (grpc), `apix` prints a one-line hint to run `apix auth` for that domain.
 
 </details>

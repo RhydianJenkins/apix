@@ -113,3 +113,101 @@ func TestSetAndLoadDomain_GRPC(t *testing.T) {
 		t.Errorf("expected HTTP options to be nil for a grpc domain, got: %+v", loaded.HTTP)
 	}
 }
+
+func TestDomain_HasAuth(t *testing.T) {
+	tests := map[string]struct {
+		domain *Domain
+		want   bool
+	}{
+		"nil domain":          {nil, false},
+		"no auth set":         {&Domain{}, false},
+		"empty command":       {&Domain{Auth: &AuthOptions{}}, false},
+		"command configured":  {&Domain{Auth: &AuthOptions{Command: "echo hi"}}, true},
+		"command with header": {&Domain{Auth: &AuthOptions{Command: "echo hi", Header: "authorization"}}, true},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			if got := tc.domain.HasAuth(); got != tc.want {
+				t.Errorf("HasAuth() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestSetAndLoadDomain_Auth(t *testing.T) {
+	tempDir := t.TempDir()
+	CfgPath = filepath.Join(tempDir, ".apix.yaml")
+	viper.Reset()
+
+	domain := &Domain{
+		Name: "auth-api",
+		Base: "https://api.example.com",
+		Auth: &AuthOptions{
+			Command: "echo token",
+			Header:  "authorization",
+		},
+	}
+
+	SetDomain(domain)
+
+	loaded, err := LoadDomain("auth-api")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if loaded.Auth == nil {
+		t.Fatalf("expected Auth options to round-trip, got nil")
+	}
+
+	if loaded.Auth.Command != "echo token" || loaded.Auth.Header != "authorization" {
+		t.Errorf("Auth options did not round-trip correctly, got: %+v", loaded.Auth)
+	}
+}
+
+func TestSetDomainHeader(t *testing.T) {
+	tempDir := t.TempDir()
+	CfgPath = filepath.Join(tempDir, ".apix.yaml")
+	viper.Reset()
+
+	SetDomain(&Domain{Name: "a", Base: "https://a.example.com"})
+	SetDomain(&Domain{Name: "b", Base: "https://b.example.com", Headers: map[string]string{"X-Existing": "kept"}})
+	// SetDomain makes its argument active; re-assert "a" is active for the test.
+	SetActiveName("a")
+
+	if err := SetDomainHeader("b", "authorization", "Bearer xyz"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	cfg := LoadConfig()
+	if cfg.Active != "a" {
+		t.Errorf("expected active domain to remain %q, got %q", "a", cfg.Active)
+	}
+
+	loaded, err := LoadDomain("b")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if loaded.Headers["authorization"] != "Bearer xyz" {
+		t.Errorf("expected authorization header to be set, got: %+v", loaded.Headers)
+	}
+
+	if loaded.Headers["X-Existing"] != "kept" {
+		t.Errorf("expected existing header to be preserved, got: %+v", loaded.Headers)
+	}
+
+	if loaded.Base != "https://b.example.com" {
+		t.Errorf("expected Base to be untouched, got %q", loaded.Base)
+	}
+}
+
+func TestSetDomainHeader_UnknownDomain(t *testing.T) {
+	tempDir := t.TempDir()
+	CfgPath = filepath.Join(tempDir, ".apix.yaml")
+	viper.Reset()
+
+	if err := SetDomainHeader("does-not-exist", "authorization", "value"); err == nil {
+		t.Fatal("expected an error for an unknown domain, got nil")
+	}
+}

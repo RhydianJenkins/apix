@@ -39,6 +39,13 @@ func ListHandler(cmd *cobra.Command, args []string) {
 				fmt.Printf("\tPort: %d\n", domain.GRPC.Port)
 			}
 
+			if domain.Auth != nil {
+				fmt.Printf("\tAuth command: %s\n", domain.Auth.Command)
+				if domain.Auth.Header != "" {
+					fmt.Printf("\tAuth header: %s\n", domain.Auth.Header)
+				}
+			}
+
 			if len(domain.Headers) > 0 {
 				fmt.Printf("\tHeaders:\n")
 				for k, v := range domain.Headers {
