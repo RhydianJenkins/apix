@@ -9,6 +9,7 @@ import (
 	"github.com/rhydianjenkins/apix/pkg/config"
 	"github.com/rhydianjenkins/apix/pkg/handlers"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 // version is overridden at build time via -ldflags "-X main.version=...".
@@ -22,30 +23,14 @@ func main() {
 }
 
 func newRootCmd(version string) *cobra.Command {
-	var cfgPathFlag string
-
 	rootCmd := &cobra.Command{
 		Use:   "apix [command]",
 		Short: "API eXecuter (APIX) is a CLI tool to manage API domains and make requests",
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			if cfgPathFlag == "" {
-				return nil
-			}
-
-			expanded, err := expandConfigPath(cfgPathFlag)
-			if err != nil {
-				return err
-			}
-
-			config.CfgPath = expanded
-
-			return nil
-		},
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.Help()
 		},
 	}
-	rootCmd.PersistentFlags().StringVarP(&cfgPathFlag, "config", "c", "", "path to the apix config file (default ~/.apix.yaml)")
+	rootCmd.PersistentFlags().VarP(&cfgPathValue{}, "config", "c", "path to the apix config file (default ~/.apix.yaml)")
 
 	newCmd := &cobra.Command{
 		Use:     "new [name] [base]",
@@ -138,3 +123,21 @@ func expandConfigPath(path string) (string, error) {
 
 	return filepath.Join(home, strings.TrimPrefix(path, "~/")), nil
 }
+
+type cfgPathValue struct{}
+
+func (c *cfgPathValue) String() string { return "" }
+func (c *cfgPathValue) Type() string   { return "string" }
+
+func (c *cfgPathValue) Set(path string) error {
+	expanded, err := expandConfigPath(path)
+	if err != nil {
+		return err
+	}
+
+	config.CfgPath = expanded
+
+	return nil
+}
+
+var _ pflag.Value = (*cfgPathValue)(nil)
