@@ -10,7 +10,7 @@ import (
 )
 
 // version is overridden at build time via -ldflags "-X main.version=...".
-// See the `build` target in the Makefile and the `ldflags` in flake.nix.
+// See the `build`/`release` apps and the `ldflags` in flake.nix.
 var version = "dev"
 
 func main() {
