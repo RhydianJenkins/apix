@@ -26,6 +26,19 @@
                     default = self.packages.${system}.apix;
                 };
 
+                checks = {
+                    test = self.packages.${system}.apix;
+
+                    vet = self.packages.${system}.apix.overrideAttrs (_: {
+                        pname = "apix-vet";
+                        checkPhase = ''
+                            runHook preCheck
+                            ${vetCmd}
+                            runHook postCheck
+                        '';
+                    });
+                };
+
                 apps = {
                     default = self.apps.${system}.apix;
 
@@ -46,26 +59,6 @@
                             text = buildCmd;
                         }}/bin/build";
                         meta.description = "Build apix into a binary";
-                    };
-
-                    test = {
-                        type = "app";
-                        program = "${pkgs.writeShellApplication {
-                            name = "test";
-                            runtimeInputs = [ pkgs.go ];
-                            text = testCmd;
-                        }}/bin/test";
-                        meta.description = "Run all tests";
-                    };
-
-                    vet = {
-                        type = "app";
-                        program = "${pkgs.writeShellApplication {
-                            name = "vet";
-                            runtimeInputs = [ pkgs.go ];
-                            text = vetCmd;
-                        }}/bin/vet";
-                        meta.description = "Run go vet";
                     };
 
                     release = {
