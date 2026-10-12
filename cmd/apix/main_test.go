@@ -37,32 +37,19 @@ func TestRootCmd_ConfigFlag_OverridesCfgPath(t *testing.T) {
 func TestRootCmd_ConfigFlag_ExpandsTilde(t *testing.T) {
 	t.Cleanup(func() { viper.Reset() })
 
-	home, err := os.UserHomeDir()
-	if err != nil {
-		t.Fatalf("failed to resolve home dir: %v", err)
-	}
-
-	tempDir, err := os.MkdirTemp(home, "apix-test-*")
-	if err != nil {
-		t.Fatalf("failed to create temp dir under home: %v", err)
-	}
-	t.Cleanup(func() { os.RemoveAll(tempDir) })
-
-	rel, err := filepath.Rel(home, filepath.Join(tempDir, "custom.yaml"))
-	if err != nil {
-		t.Fatalf("failed to compute relative path: %v", err)
-	}
+	fakeHome := t.TempDir()
+	t.Setenv("HOME", fakeHome)
 
 	viper.Reset()
 
 	cmd := newRootCmd("test")
-	cmd.SetArgs([]string{"-c", "~/" + rel, "list"})
+	cmd.SetArgs([]string{"-c", "~/custom.yaml", "list"})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("expected Execute() to return nil, got: %v", err)
 	}
 
-	want := filepath.Join(tempDir, "custom.yaml")
+	want := filepath.Join(fakeHome, "custom.yaml")
 	if config.CfgPath != want {
 		t.Fatalf("expected CfgPath to be %q, got %q", want, config.CfgPath)
 	}
