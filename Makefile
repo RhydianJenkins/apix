@@ -2,13 +2,13 @@ help: ## Show this help
 	@grep -E '^[a-z.A-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-50s\033[0m %s\n", $$1, $$2}'
 
 build: ## Build apix into a binary
-	@go build -ldflags "-X main.version=$(shell cat VERSION)" -o apix ./cmd/apix
+	@nix run .#build
 
 test: ## Run all tests
-	@go test -v ./...
+	@nix run .#test
 
 vet: ## Run go vet
-	@go vet ./...
+	@nix run .#vet
 
 release: build vet test ## Tag and push a release using the version in VERSION
 	@version=v$(shell cat VERSION); \

@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -15,6 +16,12 @@ import (
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/rhydianjenkins/apix/pkg/config"
 )
+
+type EndpointInfo struct {
+	Method  string
+	Path    string
+	Summary string
+}
 
 func GetEndpointsValidArgs(method, specSource string) ([]string, error) {
 	if specSource == "" {
@@ -41,6 +48,50 @@ func GetEndpointsValidArgs(method, specSource string) ([]string, error) {
 			endpoints = append(endpoints, path)
 		}
 	}
+
+	return endpoints, nil
+}
+
+func ListEndpoints(method, specSource string) ([]EndpointInfo, error) {
+	if specSource == "" {
+		return nil, nil
+	}
+
+	oasDocument, err := loadDocument(specSource)
+
+	if err != nil {
+		return nil, err
+	}
+
+	v3Model, errors := oasDocument.BuildV3Model()
+
+	if len(errors) > 0 {
+		return nil, fmt.Errorf("failed to build OpenAPI v3 model: %v", errors)
+	}
+
+	var endpoints []EndpointInfo
+	pathItems := v3Model.Model.Paths.PathItems
+
+	for path, pathItem := range pathItems.FromOldest() {
+		for opMethod, operation := range pathItem.GetOperations().FromOldest() {
+			if method != "" && !strings.EqualFold(method, opMethod) {
+				continue
+			}
+
+			endpoints = append(endpoints, EndpointInfo{
+				Method:  strings.ToUpper(opMethod),
+				Path:    path,
+				Summary: operation.Summary,
+			})
+		}
+	}
+
+	sort.Slice(endpoints, func(i, j int) bool {
+		if endpoints[i].Path != endpoints[j].Path {
+			return endpoints[i].Path < endpoints[j].Path
+		}
+		return endpoints[i].Method < endpoints[j].Method
+	})
 
 	return endpoints, nil
 }
