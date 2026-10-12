@@ -8,7 +8,7 @@ It handles authentication, domain switching, and [OpenAPI Specification (OAS)](h
 
 - Manage multiple API domains under one tool
 - Simple declarative `yaml` config
-- Endpoint `<tab>` completions via OAS or reflection
+- Endpoint `<tab>` completions and discoverability via OAS or reflection
 
 ## 📦 Getting Started
 
@@ -41,6 +41,7 @@ Usage:
 Available Commands:
   completion  Generate the autocompletion script for the specified shell
   delete      Send a DELETE request to the active domain
+  discover    List the endpoints or gRPC methods available on the active domain
   edit        Open config in your $EDITOR
   get         Send a GET request to the active domain
   grpc        Invoke a unary gRPC method on the active domain
@@ -94,6 +95,29 @@ apix completion zsh > ~/.local/zsh-completions/_apix
 </details>
 
 <details>
+<summary><strong>How do I discover endpoints/methods without a shell (e.g. scripts, AI agents)?</strong></summary>
+
+Shell `<tab>` completion only works in an interactive shell with a completion script loaded, so it's not usable by scripts, CI, or AI agents driving `apix` directly. Use `apix discover` instead - it prints the same information non-interactively, with a non-zero exit code on failure:
+
+```sh
+apix discover                # every endpoint/method on the active domain
+apix discover --method post  # http domains only - filter by verb
+```
+
+Output depends on the active domain's protocol:
+
+```
+# http (from the connected OAS spec)
+GET     /users - List users
+POST    /users - Create a user
+
+# grpc (via server reflection) - includes request/response message types
+mypkg.UserService/GetUser(mypkg.GetUserRequest) -> mypkg.User
+```
+
+</details>
+
+<details>
 <summary><strong>How do I get it working with OAS?</strong></summary>
 
 `APIX` can do:
@@ -110,7 +134,7 @@ apix new myapi https://api.example.com --oas "https://api.example.domain/myOAS.j
 apix new myapi https://api.example.com --oas "/local/path/to/myOAS.yaml"
 ```
 
-Assuming you've set up shell completions, you should be able to `<tab>` complete your endpoints!
+Assuming you've set up shell completions, you should be able to `<tab>` complete your endpoints! You can also list them non-interactively with `apix discover` (see above).
 
 </details>
 
@@ -156,7 +180,7 @@ echo '{"name": "world"}' | apix grpc GetUser
 cat req_body.json | apix grpc mypkg.UserService/GetUser
 ```
 
-`apix` uses [server reflection](https://grpc.io/docs/guides/reflection/) to discover services and methods, so the target server must have reflection enabled.
+`apix` uses [server reflection](https://grpc.io/docs/guides/reflection/) to discover services and methods, so the target server must have reflection enabled. List them with `<tab>` completion or `apix discover` (see above).
 
 </details>
 
