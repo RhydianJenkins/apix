@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
 
 	"github.com/rhydianjenkins/apix/v2/pkg/config"
@@ -17,9 +18,51 @@ import (
 var version = "dev"
 
 func main() {
-	if err := newRootCmd(version).Execute(); err != nil {
+	if err := newRootCmd(resolveVersion(version)).Execute(); err != nil {
 		os.Exit(1)
 	}
+}
+
+func resolveVersion(v string) string {
+	if v != "dev" {
+		return v
+	}
+
+	// ld flags not set with built with `go install ...`
+	// we should resolve it with the VCS metadata in build info instead
+	bi, ok := debug.ReadBuildInfo()
+	if !ok {
+		return v
+	}
+
+	if bi.Main.Version != "" && bi.Main.Version != "(devel)" {
+		return bi.Main.Version
+	}
+
+	var revision string
+	var modified bool
+	for _, s := range bi.Settings {
+		switch s.Key {
+		case "vcs.revision":
+			revision = s.Value
+		case "vcs.modified":
+			modified = s.Value == "true"
+		}
+	}
+
+	if revision == "" {
+		return v
+	}
+
+	if len(revision) > 12 {
+		revision = revision[:12]
+	}
+
+	if modified {
+		return fmt.Sprintf("dev-%s-dirty", revision)
+	}
+
+	return fmt.Sprintf("dev-%s", revision)
 }
 
 func newRootCmd(version string) *cobra.Command {
