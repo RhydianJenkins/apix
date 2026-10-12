@@ -224,9 +224,9 @@ apix auth --all        # runs it for every domain that has one configured
 ```yaml
 domains:
   # command's stdout becomes the authorization header/metadata value
-  junifer-uat:
+  some-oauth-gated-api:
     auth:
-      command: "oauth-cli login --client junifer | jq -r '\"Bearer \" + .access_token'"
+      command: "my-auth-cli get_token"
       header: authorization
 
   # no header - command is just run for its side effects (e.g. allow-listing your IP)
