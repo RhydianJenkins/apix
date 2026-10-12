@@ -121,6 +121,31 @@ func TestListMethods(t *testing.T) {
 	}
 }
 
+func TestListMethodsDetailed(t *testing.T) {
+	_, conn := startTestServer(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	infos, err := grpcclient.ListMethodsDetailed(ctx, conn, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(infos) != 1 {
+		t.Fatalf("expected 1 method, got %d: %v", len(infos), infos)
+	}
+
+	wantName := grpctest.ServiceName + "/" + grpctest.MethodName
+	if infos[0].QualifiedName() != wantName {
+		t.Errorf("expected QualifiedName %q, got %q", wantName, infos[0].QualifiedName())
+	}
+
+	if infos[0].Input == nil || infos[0].Output == nil {
+		t.Errorf("expected Input and Output descriptors to be populated, got %+v", infos[0])
+	}
+}
+
 // Reflection is a separate RPC from the eventual method call - servers that
 // require auth for regular RPCs typically require it for reflection too, so
 // metadata passed to ResolveMethod must reach the reflection stream itself.

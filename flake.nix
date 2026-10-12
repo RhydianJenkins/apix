@@ -33,6 +33,42 @@
                         };
                     };
                     default = self.apps.${system}.apix;
+
+                    build = {
+                        type = "app";
+                        program = "${pkgs.writeShellApplication {
+                            name = "build";
+                            runtimeInputs = [ pkgs.go ];
+                            text = ''
+                                go build -ldflags "-X main.version=$(cat VERSION)" -o apix ./cmd/apix
+                            '';
+                        }}/bin/build";
+                        meta.description = "Build apix into a binary";
+                    };
+
+                    test = {
+                        type = "app";
+                        program = "${pkgs.writeShellApplication {
+                            name = "test";
+                            runtimeInputs = [ pkgs.go ];
+                            text = ''
+                                go test -v ./...
+                            '';
+                        }}/bin/test";
+                        meta.description = "Run all tests";
+                    };
+
+                    vet = {
+                        type = "app";
+                        program = "${pkgs.writeShellApplication {
+                            name = "vet";
+                            runtimeInputs = [ pkgs.go ];
+                            text = ''
+                                go vet ./...
+                            '';
+                        }}/bin/vet";
+                        meta.description = "Run go vet";
+                    };
                 };
 
                 devShells.default = pkgs.mkShell {

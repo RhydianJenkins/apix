@@ -14,8 +14,6 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-// reflectionServiceNames are excluded from method resolution - they're the
-// reflection service itself, not something a user would want to call.
 var reflectionServiceNames = map[string]bool{
 	"grpc.reflection.v1.ServerReflection":      true,
 	"grpc.reflection.v1alpha.ServerReflection": true,
@@ -29,10 +27,10 @@ type MethodInfo struct {
 	IsServerStreaming bool
 }
 
-// methodArg may be a bare method name (e.g. "GetUser") or a qualified
-// "package.Service/Method" path. md is sent as outgoing metadata on the
-// reflection stream itself, since servers that require auth for regular
-// RPCs typically require it for reflection too.
+func (m MethodInfo) QualifiedName() string {
+	return strings.TrimPrefix(m.FullName, "/")
+}
+
 func ResolveMethod(ctx context.Context, conn *grpc.ClientConn, methodArg string, md map[string]string) (*MethodInfo, error) {
 	files, serviceNames, err := discoverServices(ctx, conn, md)
 	if err != nil {
@@ -42,15 +40,29 @@ func ResolveMethod(ctx context.Context, conn *grpc.ClientConn, methodArg string,
 	return findMethod(files, serviceNames, methodArg)
 }
 
-// ListMethods is intended for shell completion, where each candidate must
-// be a directly usable, unambiguous `apix grpc` argument.
 func ListMethods(ctx context.Context, conn *grpc.ClientConn, md map[string]string) ([]string, error) {
+	infos, err := ListMethodsDetailed(ctx, conn, md)
+	if err != nil {
+		return nil, err
+	}
+
+	names := make([]string, len(infos))
+	for i, info := range infos {
+		names[i] = info.QualifiedName()
+	}
+
+	sort.Strings(names)
+
+	return names, nil
+}
+
+func ListMethodsDetailed(ctx context.Context, conn *grpc.ClientConn, md map[string]string) ([]MethodInfo, error) {
 	files, serviceNames, err := discoverServices(ctx, conn, md)
 	if err != nil {
 		return nil, err
 	}
 
-	var names []string
+	var infos []MethodInfo
 
 	for _, svcName := range serviceNames {
 		if reflectionServiceNames[svcName] {
@@ -69,18 +81,24 @@ func ListMethods(ctx context.Context, conn *grpc.ClientConn, md map[string]strin
 
 		methods := svcDesc.Methods()
 		for i := 0; i < methods.Len(); i++ {
-			names = append(names, fmt.Sprintf("%s/%s", svcName, methods.Get(i).Name()))
+			m := methods.Get(i)
+			infos = append(infos, MethodInfo{
+				FullName:          fmt.Sprintf("/%s/%s", svcName, m.Name()),
+				Input:             m.Input(),
+				Output:            m.Output(),
+				IsClientStreaming: m.IsStreamingClient(),
+				IsServerStreaming: m.IsStreamingServer(),
+			})
 		}
 	}
 
-	sort.Strings(names)
+	sort.Slice(infos, func(i, j int) bool {
+		return infos[i].FullName < infos[j].FullName
+	})
 
-	return names, nil
+	return infos, nil
 }
 
-// md is sent as outgoing metadata on the reflection stream itself, since
-// servers that require auth for regular RPCs typically require it for
-// reflection too.
 func discoverServices(ctx context.Context, conn *grpc.ClientConn, md map[string]string) (*protoregistry.Files, []string, error) {
 	if len(md) > 0 {
 		ctx = metadata.NewOutgoingContext(ctx, metadata.New(md))

@@ -148,6 +148,61 @@ func TestGetPathItem(t *testing.T) {
 	})
 }
 
+func TestListEndpoints(t *testing.T) {
+	filename := "endpoints.yaml"
+	path := makeTestTmpFile(filename, t)
+
+	t.Run("returns nil when no spec is connected", func(t *testing.T) {
+		got, err := ListEndpoints("", "")
+		if err != nil {
+			t.Fatalf("ListEndpoints() returned error %v", err)
+		}
+		if got != nil {
+			t.Errorf("expected nil, got %v", got)
+		}
+	})
+
+	t.Run("lists every operation across every path when unfiltered", func(t *testing.T) {
+		got, err := ListEndpoints("", path)
+		if err != nil {
+			t.Fatalf("ListEndpoints() returned error %v", err)
+		}
+
+		want := []EndpointInfo{
+			{Method: "POST", Path: "/webhooks/subscription"},
+			{Method: "GET", Path: "/webhooks/subscription/{id}"},
+		}
+
+		if len(got) != len(want) {
+			t.Fatalf("expected %d endpoints, got %d: %v", len(want), len(got), got)
+		}
+
+		for i, w := range want {
+			if got[i].Method != w.Method || got[i].Path != w.Path {
+				t.Errorf("endpoint %d: expected %+v, got %+v", i, w, got[i])
+			}
+		}
+	})
+
+	t.Run("filters by method case-insensitively", func(t *testing.T) {
+		got, err := ListEndpoints("post", path)
+		if err != nil {
+			t.Fatalf("ListEndpoints() returned error %v", err)
+		}
+
+		if len(got) != 1 || got[0].Path != "/webhooks/subscription" || got[0].Method != "POST" {
+			t.Errorf("expected only the POST /webhooks/subscription endpoint, got %v", got)
+		}
+	})
+
+	t.Run("returns an error for an invalid spec source", func(t *testing.T) {
+		_, err := ListEndpoints("", "/does/not/exist.yaml")
+		if err == nil {
+			t.Fatal("expected an error, got nil")
+		}
+	})
+}
+
 func makeTestTmpFile(name string, t *testing.T) string {
 	tempDir := t.TempDir()
 	tempFile := filepath.Join(tempDir, name)
