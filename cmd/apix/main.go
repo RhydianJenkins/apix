@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/rhydianjenkins/apix/pkg/config"
 	"github.com/rhydianjenkins/apix/pkg/handlers"
@@ -20,13 +22,30 @@ func main() {
 }
 
 func newRootCmd(version string) *cobra.Command {
+	var cfgPathFlag string
+
 	rootCmd := &cobra.Command{
 		Use:   "apix [command]",
 		Short: "API eXecuter (APIX) is a CLI tool to manage API domains and make requests",
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if cfgPathFlag == "" {
+				return nil
+			}
+
+			expanded, err := expandConfigPath(cfgPathFlag)
+			if err != nil {
+				return err
+			}
+
+			config.CfgPath = expanded
+
+			return nil
+		},
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.Help()
 		},
 	}
+	rootCmd.PersistentFlags().StringVarP(&cfgPathFlag, "config", "c", "", "path to the apix config file (default ~/.apix.yaml)")
 
 	newCmd := &cobra.Command{
 		Use:     "new [name] [base]",
@@ -101,4 +120,21 @@ func newRootCmd(version string) *cobra.Command {
 func getDomainNames(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	domains := config.GetDomainNames()
 	return domains, cobra.ShellCompDirectiveNoFileComp
+}
+
+func expandConfigPath(path string) (string, error) {
+	if path != "~" && !strings.HasPrefix(path, "~/") {
+		return path, nil
+	}
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("unable to resolve home directory: %w", err)
+	}
+
+	if path == "~" {
+		return home, nil
+	}
+
+	return filepath.Join(home, strings.TrimPrefix(path, "~/")), nil
 }

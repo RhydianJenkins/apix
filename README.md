@@ -57,7 +57,8 @@ Available Commands:
   version     Print version information
 
 Flags:
-  -h, --help   help for apix
+  -c, --config string   path to the apix config file (default ~/.apix.yaml)
+  -h, --help            help for apix
 
 Use "apix [command] --help" for more information about a command.
 ```

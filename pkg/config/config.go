@@ -91,34 +91,43 @@ func LoadDomain(name string) (*Domain, error) {
 	return &domain, nil
 }
 
-func LoadConfig() *config {
+// setConfigFile points viper at CfgPath and explicitly sets the config
+// format to YAML, since viper otherwise infers it from CfgPath's file
+// extension - which may not be ".yaml" when CfgPath is user-supplied
+// (e.g. via --config).
+func setConfigFile() {
 	viper.SetConfigFile(CfgPath)
+	viper.SetConfigType("yaml")
+}
+
+func LoadConfig() *config {
+	setConfigFile()
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, statErr := os.Stat(CfgPath); os.IsNotExist(statErr) {
 			viper.SafeWriteConfigAs(CfgPath)
 		} else {
-			println("Error reading config file:", err)
+			fmt.Println("Error reading config file:", err)
 		}
 	}
 
 	var cfg config
 
 	if err := viper.Unmarshal(&cfg); err != nil {
-		println("Error unmarshalling config:", err)
+		fmt.Println("Error unmarshalling config:", err)
 	}
 
 	return &cfg
 }
 
 func SetDomain(domain *Domain) {
-	viper.SetConfigFile(CfgPath)
+	setConfigFile()
 
 	if err := viper.MergeInConfig(); err != nil {
 		if _, statErr := os.Stat(CfgPath); os.IsNotExist(statErr) {
 			viper.SafeWriteConfigAs(CfgPath)
 		} else {
-			println("Error reading config file:", err)
+			fmt.Println("Error reading config file:", err)
 		}
 	}
 
@@ -128,7 +137,7 @@ func SetDomain(domain *Domain) {
 }
 
 func RemoveDomain(nameToRemove string) error {
-	viper.SetConfigFile(CfgPath)
+	setConfigFile()
 
 	if err := viper.ReadInConfig(); err != nil {
 		return fmt.Errorf("error reading config: %w", err)
