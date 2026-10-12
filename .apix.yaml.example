@@ -1,7 +1,7 @@
 active: pokemon-example
 domains:
     pokemon-example:
-        base: https://pokeapi.co/api/v2/
+        base: https://pokeapi.co/
         http:
             openapispecpath: https://raw.githubusercontent.com/PokeAPI/pokeapi/master/openapi.yml
         headers:
