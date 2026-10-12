@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"maps"
+	"os"
 
 	"github.com/rhydianjenkins/apix/pkg/config"
 	"github.com/rhydianjenkins/apix/pkg/httpclient"
@@ -44,6 +45,9 @@ func HTTPHandler(
 	}
 
 	if res.StatusCode >= 400 {
+		if res.StatusCode == 401 && domain.HasAuth() {
+			fmt.Fprintf(os.Stderr, "hint: run `apix auth %s` to refresh credentials\n", domain.Name)
+		}
 		return resBody, fmt.Errorf("%s %s returned status %d", method, path, res.StatusCode)
 	}
 

@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"os"
 	"time"
 
 	"github.com/rhydianjenkins/apix/pkg/config"
 	"github.com/rhydianjenkins/apix/pkg/grpcclient"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func GRPCHandler(domain *config.Domain, method string, reqBody *[]byte, headers map[string]string) ([]byte, error) {
@@ -35,6 +38,9 @@ func GRPCHandler(domain *config.Domain, method string, reqBody *[]byte, headers 
 
 	body, err := grpcclient.Invoke(ctx, conn, methodInfo, reqBody, mergedHeaders)
 	if err != nil {
+		if status.Code(err) == codes.Unauthenticated && domain.HasAuth() {
+			fmt.Fprintf(os.Stderr, "hint: run `apix auth %s` to refresh credentials\n", domain.Name)
+		}
 		return nil, err
 	}
 

@@ -22,6 +22,12 @@ type Domain struct {
 
 	HTTP *HTTPOptions `yaml:"http,omitempty"`
 	GRPC *GRPCOptions `yaml:"grpc,omitempty"`
+	Auth *AuthOptions `yaml:"auth,omitempty"`
+}
+
+type AuthOptions struct {
+	Command string `yaml:"command"`
+	Header  string `yaml:"header,omitempty"` // if empty, Command is run for side effects only; stdout isn't captured
 }
 
 type HTTPOptions struct {
@@ -45,6 +51,10 @@ func (d *Domain) Protocol() string {
 		return ProtocolGRPC
 	}
 	return ProtocolHTTP
+}
+
+func (d *Domain) HasAuth() bool {
+	return d != nil && d.Auth != nil && d.Auth.Command != ""
 }
 
 type config struct {
@@ -134,6 +144,35 @@ func SetDomain(domain *Domain) {
 	viper.Set("domains."+domain.Name, domain)
 	viper.Set("active", domain.Name)
 	viper.WriteConfig()
+}
+
+// SetDomainHeader sets a single header/metadata key on an existing domain
+// without changing which domain is active - unlike SetDomain, which always
+// makes the saved domain the active one.
+func SetDomainHeader(name, key, value string) error {
+	domain, err := LoadDomain(name)
+	if err != nil {
+		return err
+	}
+
+	setConfigFile()
+
+	if err := viper.MergeInConfig(); err != nil {
+		if _, statErr := os.Stat(CfgPath); os.IsNotExist(statErr) {
+			viper.SafeWriteConfigAs(CfgPath)
+		} else {
+			fmt.Println("Error reading config file:", err)
+		}
+	}
+
+	if domain.Headers == nil {
+		domain.Headers = make(map[string]string)
+	}
+	domain.Headers[key] = value
+
+	viper.Set("domains."+name, domain)
+
+	return viper.WriteConfig()
 }
 
 func RemoveDomain(nameToRemove string) error {
