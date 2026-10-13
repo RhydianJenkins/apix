@@ -88,9 +88,11 @@
                 };
 
                 devShells.default = pkgs.mkShell {
-                    buildInputs = [
-                        pkgs.go
-                        pkgs.gopls
+                    buildInputs = with pkgs; [
+                        go
+                        gopls
+                        semgrep
+                        semgrep-core
                     ];
                 };
             });
