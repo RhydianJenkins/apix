@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"runtime/debug"
 	"strings"
 
@@ -152,23 +151,6 @@ func getDomainNames(cmd *cobra.Command, args []string, toComplete string) ([]str
 	return domains, cobra.ShellCompDirectiveNoFileComp
 }
 
-func expandConfigPath(path string) (string, error) {
-	if path != "~" && !strings.HasPrefix(path, "~/") {
-		return path, nil
-	}
-
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("unable to resolve home directory: %w", err)
-	}
-
-	if path == "~" {
-		return home, nil
-	}
-
-	return filepath.Join(home, strings.TrimPrefix(path, "~/")), nil
-}
-
 // cfgPathValue collects repeated -c flags into config.CfgPaths. The first
 // occurrence replaces the default list, later ones append.
 type cfgPathValue struct{ set bool }
@@ -177,7 +159,7 @@ func (c *cfgPathValue) String() string { return strings.Join(config.CfgPaths, ",
 func (c *cfgPathValue) Type() string   { return "stringArray" }
 
 func (c *cfgPathValue) Set(path string) error {
-	expanded, err := expandConfigPath(path)
+	expanded, err := config.ExpandPath(path)
 	if err != nil {
 		return err
 	}

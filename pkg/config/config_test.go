@@ -464,3 +464,14 @@ func TestSetDomain_UnwritableLastFile_ReturnsError(t *testing.T) {
 		t.Fatal("expected an error when the config file cannot be created")
 	}
 }
+
+func TestDefaultCfgPaths_ExpandsTildeInAPIXConfig(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("APIX_CONFIG", strings.Join([]string{"~/a.yaml", "~/b.yaml"}, string(os.PathListSeparator)))
+
+	want := []string{filepath.Join(home, "a.yaml"), filepath.Join(home, "b.yaml")}
+	if got := defaultCfgPaths(); !slices.Equal(got, want) {
+		t.Errorf("defaultCfgPaths() = %q, want %q", got, want)
+	}
+}

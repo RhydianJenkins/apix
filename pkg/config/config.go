@@ -4,19 +4,48 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/viper"
 )
+
+// ExpandPath expands a leading "~" to the user's home directory. Shells don't
+// always do this themselves (e.g. after a ":" in a path list), so it is applied
+// to -c values and $APIX_CONFIG entries alike.
+func ExpandPath(path string) (string, error) {
+	if path != "~" && !strings.HasPrefix(path, "~/") {
+		return path, nil
+	}
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("unable to resolve home directory: %w", err)
+	}
+
+	if path == "~" {
+		return home, nil
+	}
+
+	return filepath.Join(home, strings.TrimPrefix(path, "~/")), nil
+}
 
 // defaultCfgPaths returns the config files to use when no -c flag is given:
 // $APIX_CONFIG (an OS path list, so a single path works as before) or
 // ~/.apix.yaml.
 func defaultCfgPaths() []string {
-	if p := os.Getenv("APIX_CONFIG"); p != "" {
-		return filepath.SplitList(p)
+	env := os.Getenv("APIX_CONFIG")
+	if env == "" {
+		return []string{filepath.Join(os.Getenv("HOME"), ".apix.yaml")}
 	}
 
-	return []string{filepath.Join(os.Getenv("HOME"), ".apix.yaml")}
+	paths := filepath.SplitList(env)
+	for i, p := range paths {
+		if expanded, err := ExpandPath(p); err == nil {
+			paths[i] = expanded
+		}
+	}
+
+	return paths
 }
 
 // CfgPaths are the config files, in merge order: later files deep-merge over
