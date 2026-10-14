@@ -104,29 +104,6 @@ apix completion zsh > ~/.local/zsh-completions/_apix
 </details>
 
 <details>
-<summary><strong>How do I discover endpoints/methods without a shell (e.g. scripts, AI agents)?</strong></summary>
-
-Shell `<tab>` completion only works in an interactive shell with a completion script loaded, so it's not usable by scripts, CI, or AI agents driving `apix` directly. Use `apix discover` instead - it prints the same information non-interactively, with a non-zero exit code on failure:
-
-```sh
-apix discover                # every endpoint/method on the active domain
-apix discover --method post  # http domains only - filter by verb
-```
-
-Output depends on the active domain's protocol:
-
-```
-# http (from the connected OAS spec)
-GET     /users - List users
-POST    /users - Create a user
-
-# grpc (via server reflection) - includes request/response message types
-mypkg.UserService/GetUser(mypkg.GetUserRequest) -> mypkg.User
-```
-
-</details>
-
-<details>
 <summary><strong>How do I get it working with OAS?</strong></summary>
 
 `APIX` can do:
@@ -144,68 +121,6 @@ apix new myapi https://api.example.com --oas "/local/path/to/myOAS.yaml"
 ```
 
 Assuming you've set up shell completions, you should be able to `<tab>` complete your endpoints! You can also list them non-interactively with `apix discover` (see above).
-
-</details>
-
-<details>
-<summary><strong>How do I connect to a non-default port?</strong></summary>
-
-For both `http` and `grpc` domains, `base` must be host-only - it can never include a port itself. If your API listens on a non-default port, set it separately with `--port` (or `http.port`/`grpc.port` in `.apix.yaml`):
-
-```sh
-apix new myapi https://api.example.com --port 8443
-```
-
-If you omit `--port`, the scheme's default port is used as normal (`http` domains only - `grpc` domains always require `--port`, since there's no equivalent default).
-
-</details>
-
-<details>
-<summary><strong>How do I use gRPC?</strong></summary>
-
-Create a domain with `--protocol grpc`, pointing `base` at the host of your gRPC server and `--port` at its port. `base` must be host-only - the port always comes from `--port` (or `grpc.port` in `.apix.yaml`), never from `base` itself:
-
-```sh
-# TLS (default)
-apix new mygrpc grpc.example.com --protocol grpc --port 443
-
-# plaintext, e.g. for local development
-apix new mygrpc localhost --protocol grpc --insecure --port 50051
-```
-
-Then invoke a unary method by name using `apix grpc`. If the method takes no input (or you're happy sending an empty request), just run it directly:
-
-```sh
-apix grpc GetUser
-# ...or qualify it if the method name is ambiguous across services
-apix grpc mypkg.UserService/GetUser
-```
-
-If the method expects a request body, pipe it in as JSON, same as `apix post`/`apix put`. Field names must match the input message's `protojson` representation:
-
-```sh
-echo '{"name": "world"}' | apix grpc GetUser
-# ...or from a file
-cat req_body.json | apix grpc mypkg.UserService/GetUser
-```
-
-`apix` uses [server reflection](https://grpc.io/docs/guides/reflection/) to discover services and methods, so the target server must have reflection enabled. List them with `<tab>` completion or `apix discover` (see above).
-
-</details>
-
-<details>
-<summary><strong>How do I send headers?</strong></summary>
-
-You can add a headers attribute to the `yaml` config file. Edit it with `apix edit`, then add the following to the domain you want to send headers with:
-
-```yaml
-...
-domains:
-  my-domain:
-    ...
-    headers:
-      x-my-header: foobar
-```
 
 </details>
 
@@ -234,39 +149,5 @@ domains:
     auth:
       command: "curl -sf -X POST https://admin.example.com/allowlist/me"
 ```
-
-`apix auth` sets `$APIX_DOMAIN` in the command's environment to the domain being authenticated, so `apix set-header <key> <value>` run from within it already targets the right domain - even for `apix auth my-domain` or `apix auth --all`, without switching the active domain. You can also call `apix set-header` directly, outside of `apix auth`, with an explicit `--domain`:
-
-```sh
-apix set-header authorization "Bearer xyz"                 # active domain
-apix set-header authorization "Bearer xyz" --domain my-api # named domain, without switching to it
-```
-
-To keep secrets out of a git-tracked config, layer a private file on top of it:
-
-```sh
-apix -c .apix.yaml -c .apix.private.yaml auth
-```
-
-`-c` can be repeated. Files are deep-merged in order, so later files override earlier ones, and **all writes** (`apix auth`/`set-header`, `new`, `switch`, `remove`) go to the last file. Here the `authorization` header lands in `.apix.private.yaml` and `.apix.yaml` is never touched. Header names are stored lower-cased.
-
-Think of the first file as the shared, tracked config and the last as your personal overlay. Because writes only touch the last file, `apix remove` can only remove domains defined there; a domain defined in an earlier file has to be removed from that file (and `apix edit` likewise only opens the last file).
-
-**Prefer `$APIX_CONFIG` over a shell alias for a layered default.** It takes the same list, separated by your OS path-list separator (`:` on Linux/macOS), and a leading `~` is expanded:
-
-```sh
-export APIX_CONFIG="$HOME/.apix.yaml:$HOME/.apix.private.yaml"      # bash/zsh
-set -gx APIX_CONFIG $HOME/.apix.yaml:$HOME/.apix.private.yaml       # fish
-```
-
-`-c` flags always take precedence over `$APIX_CONFIG`, so an alias that bakes in `-c` makes per-command overrides impossible. With the env var, overriding is easy, e.g. to remove a domain from the tracked file or edit it:
-
-```sh
-apix -c ~/.apix.yaml remove old-domain
-APIX_CONFIG=~/.apix.yaml apix edit        # fish: env APIX_CONFIG=~/.apix.yaml apix edit
-command apix -c ~/.apix.yaml edit         # bypasses an alias
-```
-
-If a request to a domain with `auth.command` configured gets back a 401 (http) or an Unauthenticated status (grpc), `apix` prints a one-line hint to run `apix auth` for that domain.
 
 </details>
