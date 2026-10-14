@@ -89,6 +89,7 @@
 
                 devShells.default = pkgs.mkShell {
                     buildInputs = with pkgs; [
+                        gcc
                         go
                         gopls
                         semgrep
