@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rhydianjenkins/apix/v2/pkg/config"
+	"github.com/rhydianjenkins/apix/v3/pkg/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

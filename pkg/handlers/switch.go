@@ -3,7 +3,7 @@ package handlers
 import (
 	"fmt"
 
-	"github.com/rhydianjenkins/apix/v2/pkg/config"
+	"github.com/rhydianjenkins/apix/v3/pkg/config"
 	"github.com/spf13/cobra"
 )
 

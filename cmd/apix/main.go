@@ -7,8 +7,8 @@ import (
 	"runtime/debug"
 	"strings"
 
-	"github.com/rhydianjenkins/apix/v2/pkg/config"
-	"github.com/rhydianjenkins/apix/v2/pkg/handlers"
+	"github.com/rhydianjenkins/apix/v3/pkg/config"
+	"github.com/rhydianjenkins/apix/v3/pkg/handlers"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )

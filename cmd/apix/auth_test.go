@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/rhydianjenkins/apix/v2/pkg/config"
+	"github.com/rhydianjenkins/apix/v3/pkg/config"
 )
 
 func TestAuthCommand_ActiveDomain(t *testing.T) {

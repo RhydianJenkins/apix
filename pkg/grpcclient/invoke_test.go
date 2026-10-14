@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rhydianjenkins/apix/v2/pkg/grpcclient"
+	"github.com/rhydianjenkins/apix/v3/pkg/grpcclient"
 )
 
 func TestInvoke(t *testing.T) {

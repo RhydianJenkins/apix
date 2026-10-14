@@ -1,10 +1,11 @@
-module github.com/rhydianjenkins/apix/v2
+module github.com/rhydianjenkins/apix/v3
 
 go 1.25.0
 
 require (
 	github.com/pb33f/libopenapi v0.22.3
 	github.com/spf13/cobra v1.9.1
+	github.com/spf13/pflag v1.0.6
 	github.com/spf13/viper v1.20.1
 	google.golang.org/grpc v1.83.2
 	google.golang.org/protobuf v1.36.12
@@ -23,7 +24,6 @@ require (
 	github.com/speakeasy-api/jsonpath v0.6.2 // indirect
 	github.com/spf13/afero v1.12.0 // indirect
 	github.com/spf13/cast v1.7.1 // indirect
-	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/wk8/go-ordered-map/v2 v2.1.9-0.20240815153524-6ea36470d1bd // indirect
 	go.uber.org/atomic v1.9.0 // indirect

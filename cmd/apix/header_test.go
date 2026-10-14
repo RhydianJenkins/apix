@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/rhydianjenkins/apix/v2/pkg/config"
+	"github.com/rhydianjenkins/apix/v3/pkg/config"
 )
 
 func TestSetHeaderCommand_DomainFlag(t *testing.T) {

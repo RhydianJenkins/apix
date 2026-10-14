@@ -13,7 +13,7 @@ It handles authentication, domain switching, and [OpenAPI Specification (OAS)](h
 ## 📦 Getting Started
 
 ```sh
-go install github.com/rhydianjenkins/apix/v2/cmd/apix@latest
+go install github.com/rhydianjenkins/apix/v3/cmd/apix@latest
 
 # ...or with nix
 nix run github:rhydianjenkins/apix

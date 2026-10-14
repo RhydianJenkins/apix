@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/rhydianjenkins/apix/v2/pkg/handlers"
+	"github.com/rhydianjenkins/apix/v3/pkg/handlers"
 	"github.com/spf13/cobra"
 )
 
