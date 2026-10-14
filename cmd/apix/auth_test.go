@@ -1,16 +1,21 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/rhydianjenkins/apix/v2/pkg/config"
 )
 
 func TestAuthCommand_ActiveDomain(t *testing.T) {
+	tempDir := t.TempDir()
+	outFile := filepath.Join(tempDir, "domain.txt")
+
 	setActiveDomain(t, &config.Domain{
 		Name: "testauth",
 		Base: "https://api.example.com",
-		Auth: &config.AuthOptions{Command: "printf cli-token", Header: "authorization"},
+		Auth: &config.AuthOptions{Command: "printf '%s' \"$APIX_DOMAIN\" > " + outFile},
 	})
 
 	cmd := newRootCmd("test")
@@ -20,13 +25,13 @@ func TestAuthCommand_ActiveDomain(t *testing.T) {
 		t.Fatalf("expected Execute() to return nil, got: %v", err)
 	}
 
-	loaded, err := config.LoadDomain("testauth")
+	got, err := os.ReadFile(outFile)
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf("unexpected error reading command output: %v", err)
 	}
 
-	if loaded.Headers["authorization"] != "cli-token" {
-		t.Errorf("expected authorization header to be set, got: %+v", loaded.Headers)
+	if string(got) != "testauth" {
+		t.Errorf("expected APIX_DOMAIN to be %q, got %q", "testauth", string(got))
 	}
 }
 
@@ -51,7 +56,6 @@ func TestNewCommand_AuthFlags(t *testing.T) {
 	cmd.SetArgs([]string{
 		"new", "testauth", "https://api.example.com",
 		"--auth-command", "printf token",
-		"--auth-header", "authorization",
 	})
 
 	if err := cmd.Execute(); err != nil {
@@ -63,7 +67,7 @@ func TestNewCommand_AuthFlags(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if loaded.Auth == nil || loaded.Auth.Command != "printf token" || loaded.Auth.Header != "authorization" {
+	if loaded.Auth == nil || loaded.Auth.Command != "printf token" {
 		t.Errorf("expected Auth options to be set from flags, got: %+v", loaded.Auth)
 	}
 }

@@ -41,9 +41,6 @@ func ListHandler(cmd *cobra.Command, args []string) {
 
 			if domain.Auth != nil {
 				fmt.Printf("\tAuth command: %s\n", domain.Auth.Command)
-				if domain.Auth.Header != "" {
-					fmt.Printf("\tAuth header: %s\n", domain.Auth.Header)
-				}
 			}
 
 			if len(domain.Headers) > 0 {

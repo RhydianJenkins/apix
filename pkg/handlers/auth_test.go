@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -16,36 +17,61 @@ func newAuthTestCmd() *cobra.Command {
 	return cmd
 }
 
-func TestRunAuth_CapturesHeader(t *testing.T) {
+func TestRunAuth_SetsDomainEnvVar(t *testing.T) {
 	tempDir := t.TempDir()
-	config.CfgPath = filepath.Join(tempDir, ".apix.yaml")
-	viper.Reset()
+	outFile := filepath.Join(tempDir, "domain.txt")
 
 	domain := &config.Domain{
 		Name: "auth-api",
 		Base: "https://api.example.com",
 		Auth: &config.AuthOptions{
-			Command: "printf token-value",
-			Header:  "authorization",
+			Command: "printf '%s' \"$APIX_DOMAIN\" > " + outFile,
 		},
 	}
-	config.SetDomain(domain)
 
 	if err := runAuth(domain); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	loaded, err := config.LoadDomain("auth-api")
+	got, err := os.ReadFile(outFile)
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf("unexpected error reading command output: %v", err)
 	}
 
-	if loaded.Headers["authorization"] != "token-value" {
-		t.Errorf("expected authorization header to be set to %q, got: %+v", "token-value", loaded.Headers)
+	if string(got) != "auth-api" {
+		t.Errorf("expected APIX_DOMAIN to be %q, got %q", "auth-api", string(got))
 	}
 }
 
-func TestRunAuth_NoHeader_SideEffectOnly(t *testing.T) {
+func TestRunAuth_SetsConfigEnvVar(t *testing.T) {
+	tempDir := t.TempDir()
+	config.CfgPath = filepath.Join(tempDir, "custom.yaml")
+	viper.Reset()
+
+	outFile := filepath.Join(tempDir, "config-path.txt")
+
+	domain := &config.Domain{
+		Name: "auth-api",
+		Auth: &config.AuthOptions{
+			Command: "printf '%s' \"$APIX_CONFIG\" > " + outFile,
+		},
+	}
+
+	if err := runAuth(domain); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got, err := os.ReadFile(outFile)
+	if err != nil {
+		t.Fatalf("unexpected error reading command output: %v", err)
+	}
+
+	if string(got) != config.CfgPath {
+		t.Errorf("expected APIX_CONFIG to be %q, got %q", config.CfgPath, string(got))
+	}
+}
+
+func TestRunAuth_RunsSideEffectCommand(t *testing.T) {
 	domain := &config.Domain{
 		Name: "side-effect-api",
 		Auth: &config.AuthOptions{Command: "true"},
@@ -72,22 +98,6 @@ func TestRunAuth_CommandFails(t *testing.T) {
 	}
 }
 
-func TestRunAuth_EmptyOutputWithHeaderSet(t *testing.T) {
-	domain := &config.Domain{
-		Name: "empty-output-api",
-		Auth: &config.AuthOptions{Command: "true", Header: "authorization"},
-	}
-
-	err := runAuth(domain)
-	if err == nil {
-		t.Fatal("expected an error for empty output with a header configured, got nil")
-	}
-
-	if !strings.Contains(err.Error(), "produced no output") {
-		t.Errorf("expected error to mention empty output, got: %v", err)
-	}
-}
-
 func TestRunAuth_NoAuthConfigured(t *testing.T) {
 	domain := &config.Domain{Name: "no-auth-api"}
 
@@ -106,11 +116,13 @@ func TestAuthHandler_NamedDomain_DoesNotChangeActive(t *testing.T) {
 	config.CfgPath = filepath.Join(tempDir, ".apix.yaml")
 	viper.Reset()
 
+	outFile := filepath.Join(tempDir, "domain.txt")
+
 	config.SetDomain(&config.Domain{Name: "a", Base: "https://a.example.com"})
 	config.SetDomain(&config.Domain{
 		Name: "b",
 		Base: "https://b.example.com",
-		Auth: &config.AuthOptions{Command: "printf b-token", Header: "authorization"},
+		Auth: &config.AuthOptions{Command: "printf '%s' \"$APIX_DOMAIN\" > " + outFile},
 	})
 	config.SetActiveName("a")
 
@@ -124,13 +136,13 @@ func TestAuthHandler_NamedDomain_DoesNotChangeActive(t *testing.T) {
 		t.Errorf("expected active domain to remain %q, got %q", "a", got)
 	}
 
-	loaded, err := config.LoadDomain("b")
+	got, err := os.ReadFile(outFile)
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf("unexpected error reading command output: %v", err)
 	}
 
-	if loaded.Headers["authorization"] != "b-token" {
-		t.Errorf("expected authorization header to be set, got: %+v", loaded.Headers)
+	if string(got) != "b" {
+		t.Errorf("expected APIX_DOMAIN to be %q, got %q", "b", string(got))
 	}
 }
 
@@ -139,11 +151,13 @@ func TestAuthHandler_All(t *testing.T) {
 	config.CfgPath = filepath.Join(tempDir, ".apix.yaml")
 	viper.Reset()
 
+	goodMarker := filepath.Join(tempDir, "good.txt")
+
 	config.SetDomain(&config.Domain{Name: "no-auth", Base: "https://no-auth.example.com"})
 	config.SetDomain(&config.Domain{
 		Name: "good",
 		Base: "https://good.example.com",
-		Auth: &config.AuthOptions{Command: "printf good-token", Header: "authorization"},
+		Auth: &config.AuthOptions{Command: "touch " + goodMarker},
 	})
 	config.SetDomain(&config.Domain{
 		Name: "bad",
@@ -163,13 +177,8 @@ func TestAuthHandler_All(t *testing.T) {
 		t.Errorf("expected error to mention the failing domain %q, got: %v", "bad", err)
 	}
 
-	loaded, loadErr := config.LoadDomain("good")
-	if loadErr != nil {
-		t.Fatalf("unexpected error: %v", loadErr)
-	}
-
-	if loaded.Headers["authorization"] != "good-token" {
-		t.Errorf("expected the succeeding domain to still have its header set, got: %+v", loaded.Headers)
+	if _, err := os.Stat(goodMarker); err != nil {
+		t.Errorf("expected the succeeding domain's command to have run, got: %v", err)
 	}
 }
 

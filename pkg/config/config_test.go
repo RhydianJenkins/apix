@@ -7,6 +7,24 @@ import (
 	"github.com/spf13/viper"
 )
 
+func TestDefaultCfgPath_HonoursAPIXConfigEnvVar(t *testing.T) {
+	t.Setenv("APIX_CONFIG", "/tmp/from-env.yaml")
+
+	if got := defaultCfgPath(); got != "/tmp/from-env.yaml" {
+		t.Errorf("defaultCfgPath() = %q, want %q", got, "/tmp/from-env.yaml")
+	}
+}
+
+func TestDefaultCfgPath_FallsBackToHomeDir(t *testing.T) {
+	t.Setenv("APIX_CONFIG", "")
+	t.Setenv("HOME", "/home/testuser")
+
+	want := filepath.Join("/home/testuser", ".apix.yaml")
+	if got := defaultCfgPath(); got != want {
+		t.Errorf("defaultCfgPath() = %q, want %q", got, want)
+	}
+}
+
 func TestDomain_IsGRPC(t *testing.T) {
 	tests := map[string]struct {
 		domain *Domain
@@ -119,11 +137,10 @@ func TestDomain_HasAuth(t *testing.T) {
 		domain *Domain
 		want   bool
 	}{
-		"nil domain":          {nil, false},
-		"no auth set":         {&Domain{}, false},
-		"empty command":       {&Domain{Auth: &AuthOptions{}}, false},
-		"command configured":  {&Domain{Auth: &AuthOptions{Command: "echo hi"}}, true},
-		"command with header": {&Domain{Auth: &AuthOptions{Command: "echo hi", Header: "authorization"}}, true},
+		"nil domain":         {nil, false},
+		"no auth set":        {&Domain{}, false},
+		"empty command":      {&Domain{Auth: &AuthOptions{}}, false},
+		"command configured": {&Domain{Auth: &AuthOptions{Command: "echo hi"}}, true},
 	}
 
 	for name, tc := range tests {
@@ -145,7 +162,6 @@ func TestSetAndLoadDomain_Auth(t *testing.T) {
 		Base: "https://api.example.com",
 		Auth: &AuthOptions{
 			Command: "echo token",
-			Header:  "authorization",
 		},
 	}
 
@@ -160,7 +176,7 @@ func TestSetAndLoadDomain_Auth(t *testing.T) {
 		t.Fatalf("expected Auth options to round-trip, got nil")
 	}
 
-	if loaded.Auth.Command != "echo token" || loaded.Auth.Header != "authorization" {
+	if loaded.Auth.Command != "echo token" {
 		t.Errorf("Auth options did not round-trip correctly, got: %+v", loaded.Auth)
 	}
 }
