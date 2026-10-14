@@ -6,12 +6,12 @@ import (
 )
 
 func addAuthNewFlags(cmd *cobra.Command) {
-	cmd.Flags().String("auth-command", "", "shell command `apix auth` should run to (re-)authenticate this domain")
-	cmd.Flags().String("auth-header", "", "if set, the header/metadata key to store the auth command's trimmed stdout under")
+	cmd.Flags().String("auth-command", "", "shell command `apix auth` should run to (re-)authenticate this domain; responsible for persisting any header itself, e.g. via `apix set-header`")
 }
 
 func registerAuthCommands(rootCmd *cobra.Command) {
 	rootCmd.AddCommand(newAuthCommand())
+	rootCmd.AddCommand(newSetHeaderCommand())
 }
 
 func newAuthCommand() *cobra.Command {

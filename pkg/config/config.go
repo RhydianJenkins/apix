@@ -8,7 +8,15 @@ import (
 	"github.com/spf13/viper"
 )
 
-var CfgPath = filepath.Join(os.Getenv("HOME"), ".apix.yaml")
+func defaultCfgPath() string {
+	if p := os.Getenv("APIX_CONFIG"); p != "" {
+		return p
+	}
+
+	return filepath.Join(os.Getenv("HOME"), ".apix.yaml")
+}
+
+var CfgPath = defaultCfgPath()
 
 const (
 	ProtocolHTTP = "http"
@@ -26,8 +34,7 @@ type Domain struct {
 }
 
 type AuthOptions struct {
-	Command string `yaml:"command"`
-	Header  string `yaml:"header,omitempty"` // if empty, Command is run for side effects only; stdout isn't captured
+	Command string `yaml:"command"` // run via `apix auth`; responsible for persisting any header itself, e.g. via `apix set-header`
 }
 
 type HTTPOptions struct {

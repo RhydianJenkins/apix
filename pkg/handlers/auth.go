@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -68,8 +67,6 @@ func authAll() error {
 	return nil
 }
 
-// Stdin/stderr are inherited so interactive auth flows (device-code OAuth,
-// "approve on your phone" prompts) work as expected.
 func runAuth(domain *config.Domain) error {
 	if !domain.HasAuth() {
 		return fmt.Errorf(
@@ -80,35 +77,21 @@ func runAuth(domain *config.Domain) error {
 
 	execCmd := exec.Command("sh", "-c", domain.Auth.Command)
 	execCmd.Stdin = os.Stdin
+	execCmd.Stdout = os.Stdout
 	execCmd.Stderr = os.Stderr
 
-	header := domain.Auth.Header
-
-	var out bytes.Buffer
-	if header != "" {
-		execCmd.Stdout = &out
-	} else {
-		execCmd.Stdout = os.Stdout
-	}
+	// set env variables so child apix processes know which domain/config it was ran from
+	// this allows you to call apix from within `auth.command`
+	execCmd.Env = append(os.Environ(),
+		"APIX_DOMAIN="+domain.Name,
+		"APIX_CONFIG="+config.CfgPath,
+	)
 
 	if err := execCmd.Run(); err != nil {
 		return fmt.Errorf("auth command for %q failed: %w", domain.Name, err)
 	}
 
-	if header == "" {
-		fmt.Printf("Ran auth command for %q.\n", domain.Name)
-		return nil
-	}
+	fmt.Printf("Ran auth command for %q.\n", domain.Name)
 
-	value := strings.TrimSpace(out.String())
-	if value == "" {
-		return fmt.Errorf("auth command for %q configured header %q but produced no output", domain.Name, header)
-	}
-
-	if err := config.SetDomainHeader(domain.Name, header, value); err != nil {
-		return fmt.Errorf("failed to save %q header for %q: %w", header, domain.Name, err)
-	}
-
-	fmt.Printf("Updated %q header for domain %q.\n", header, domain.Name)
 	return nil
 }

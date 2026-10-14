@@ -59,6 +59,7 @@ Available Commands:
   post        Send a POST request to the active domain
   put         Send a PUT request to the active domain
   remove      Remove a domain from the config
+  set-header  Set a header/metadata value on a domain, without changing the active domain
   show        Show a summary of an endpoint from the connected OpenAPI spec
   switch      Sets the active domain to the specified name
   version     Print version information
@@ -219,20 +220,26 @@ apix auth my-domain    # ...or for a named domain, without switching to it
 apix auth --all        # runs it for every domain that has one configured
 ```
 
-`command` is run through `sh -c`, with stdin/stderr inherited from your terminal - so interactive flows (an OAuth CLI, a "approve on your phone" prompt, etc.) work as expected. What happens to its stdout depends on whether `header` is set:
+`command` is run through `sh -c`, with stdin/stdout/stderr all inherited from your terminal - so interactive flows (an OAuth CLI, a "approve on your phone" prompt, etc.) work as expected. `apix` never captures or interprets the command's output - if it needs to save a header/metadata value (e.g. a bearer token), the command is responsible for doing that itself, via `apix set-header`:
 
 ```yaml
 domains:
-  # command's stdout becomes the authorization header/metadata value
+  # the command saves its own header, using `apix set-header`
   some-oauth-gated-api:
     auth:
-      command: "my-auth-cli get_token"
-      header: authorization
+      command: "apix set-header authorization \"Bearer $(my-auth-cli get_token)\""
 
-  # no header - command is just run for its side effects (e.g. allow-listing your IP)
+  # ...or just run for its side effects (e.g. allow-listing your IP) - no header needed
   some-ip-gated-api:
     auth:
       command: "curl -sf -X POST https://admin.example.com/allowlist/me"
+```
+
+`apix auth` sets `$APIX_DOMAIN` in the command's environment to the domain being authenticated, so `apix set-header <key> <value>` run from within it already targets the right domain - even for `apix auth my-domain` or `apix auth --all`, without switching the active domain. You can also call `apix set-header` directly, outside of `apix auth`, with an explicit `--domain`:
+
+```sh
+apix set-header authorization "Bearer xyz"                 # active domain
+apix set-header authorization "Bearer xyz" --domain my-api # named domain, without switching to it
 ```
 
 If a request to a domain with `auth.command` configured gets back a 401 (http) or an Unauthenticated status (grpc), `apix` prints a one-line hint to run `apix auth` for that domain.
