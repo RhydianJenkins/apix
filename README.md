@@ -248,7 +248,24 @@ To keep secrets out of a git-tracked config, layer a private file on top of it:
 apix -c .apix.yaml -c .apix.private.yaml auth
 ```
 
-`-c` can be repeated. Files are deep-merged in order, so later files override earlier ones, and **all writes** (`apix auth`/`set-header`, `new`, `switch`, `remove`) go to the last file. Here the `authorization` header lands in `.apix.private.yaml` and `.apix.yaml` is never touched. `$APIX_CONFIG` accepts the same list, separated by your OS path-list separator (`:` on Linux/macOS). Header names are stored lower-cased.
+`-c` can be repeated. Files are deep-merged in order, so later files override earlier ones, and **all writes** (`apix auth`/`set-header`, `new`, `switch`, `remove`) go to the last file. Here the `authorization` header lands in `.apix.private.yaml` and `.apix.yaml` is never touched. Header names are stored lower-cased.
+
+Think of the first file as the shared, tracked config and the last as your personal overlay. Because writes only touch the last file, `apix remove` can only remove domains defined there; a domain defined in an earlier file has to be removed from that file (and `apix edit` likewise only opens the last file).
+
+**Prefer `$APIX_CONFIG` over a shell alias for a layered default.** It takes the same list, separated by your OS path-list separator (`:` on Linux/macOS), and a leading `~` is expanded:
+
+```sh
+export APIX_CONFIG="$HOME/.apix.yaml:$HOME/.apix.private.yaml"      # bash/zsh
+set -gx APIX_CONFIG $HOME/.apix.yaml:$HOME/.apix.private.yaml       # fish
+```
+
+`-c` flags always take precedence over `$APIX_CONFIG`, so an alias that bakes in `-c` makes per-command overrides impossible. With the env var, overriding is easy, e.g. to remove a domain from the tracked file or edit it:
+
+```sh
+apix -c ~/.apix.yaml remove old-domain
+APIX_CONFIG=~/.apix.yaml apix edit        # fish: env APIX_CONFIG=~/.apix.yaml apix edit
+command apix -c ~/.apix.yaml edit         # bypasses an alias
+```
 
 If a request to a domain with `auth.command` configured gets back a 401 (http) or an Unauthenticated status (grpc), `apix` prints a one-line hint to run `apix auth` for that domain.
 
