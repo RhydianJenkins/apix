@@ -84,7 +84,7 @@ func runAuth(domain *config.Domain) error {
 	// this allows you to call apix from within `auth.command`
 	execCmd.Env = append(os.Environ(),
 		"APIX_DOMAIN="+domain.Name,
-		"APIX_CONFIG="+config.CfgPath,
+		"APIX_CONFIG="+strings.Join(config.CfgPaths, string(os.PathListSeparator)),
 	)
 
 	if err := execCmd.Run(); err != nil {

@@ -8,15 +8,25 @@ import (
 	"github.com/spf13/viper"
 )
 
-func defaultCfgPath() string {
+// defaultCfgPaths returns the config files to use when no -c flag is given:
+// $APIX_CONFIG (an OS path list, so a single path works as before) or
+// ~/.apix.yaml.
+func defaultCfgPaths() []string {
 	if p := os.Getenv("APIX_CONFIG"); p != "" {
-		return p
+		return filepath.SplitList(p)
 	}
 
-	return filepath.Join(os.Getenv("HOME"), ".apix.yaml")
+	return []string{filepath.Join(os.Getenv("HOME"), ".apix.yaml")}
 }
 
-var CfgPath = defaultCfgPath()
+// CfgPaths are the config files, in merge order: later files deep-merge over
+// earlier ones. Only the last one is ever written to, see WritePath.
+var CfgPaths = defaultCfgPaths()
+
+// WritePath is the config file that receives all writes (the last of CfgPaths).
+func WritePath() string {
+	return CfgPaths[len(CfgPaths)-1]
+}
 
 const (
 	ProtocolHTTP = "http"
@@ -69,6 +79,66 @@ type config struct {
 	Domains map[string]Domain `mapstructure:"domains"`
 }
 
+// createEmptyConfig creates path without touching any other config's content.
+func createEmptyConfig(path string) error {
+	v := viper.New()
+	v.SetConfigType("yaml")
+
+	return v.SafeWriteConfigAs(path)
+}
+
+// loadMerged reads every file in CfgPaths and deep-merges them, later files
+// overriding earlier ones. A missing file is skipped, except the write target
+// which is created.
+func loadMerged() *viper.Viper {
+	v := viper.New()
+	v.SetConfigType("yaml")
+
+	for _, path := range CfgPaths {
+		v.SetConfigFile(path)
+
+		err := v.MergeInConfig()
+		if err == nil {
+			continue
+		}
+
+		if _, statErr := os.Stat(path); os.IsNotExist(statErr) {
+			if path == WritePath() {
+				if createErr := createEmptyConfig(path); createErr != nil {
+					fmt.Println("Error creating config file:", createErr)
+				}
+			}
+			continue
+		}
+
+		fmt.Println("Error reading config file:", err)
+	}
+
+	return v
+}
+
+// loadWriteTarget reads only WritePath, so that values merged in from earlier
+// files are never persisted into it.
+func loadWriteTarget() (*viper.Viper, error) {
+	path := WritePath()
+
+	v := viper.New()
+	v.SetConfigType("yaml")
+	v.SetConfigFile(path)
+
+	if err := v.ReadInConfig(); err != nil {
+		if _, statErr := os.Stat(path); !os.IsNotExist(statErr) {
+			return nil, fmt.Errorf("error reading config: %w", err)
+		}
+
+		if createErr := createEmptyConfig(path); createErr != nil {
+			return nil, fmt.Errorf("error creating config: %w", createErr)
+		}
+	}
+
+	return v, nil
+}
+
 func SetActiveName(activeName string) error {
 	cfg := LoadConfig()
 
@@ -80,10 +150,14 @@ func SetActiveName(activeName string) error {
 		return fmt.Errorf("Domain %q does not exist.\nUse `apix list` to show available domains or `apix new` to add new ones.\n", activeName)
 	}
 
-	viper.Set("active", activeName)
-	viper.WriteConfig()
+	v, err := loadWriteTarget()
+	if err != nil {
+		return err
+	}
 
-	return nil
+	v.Set("active", activeName)
+
+	return v.WriteConfig()
 }
 
 func GetActiveDomain() *Domain {
@@ -108,100 +182,80 @@ func LoadDomain(name string) (*Domain, error) {
 	return &domain, nil
 }
 
-// setConfigFile points viper at CfgPath and explicitly sets the config
-// format to YAML, since viper otherwise infers it from CfgPath's file
-// extension - which may not be ".yaml" when CfgPath is user-supplied
-// (e.g. via --config).
-func setConfigFile() {
-	viper.SetConfigFile(CfgPath)
-	viper.SetConfigType("yaml")
-}
-
 func LoadConfig() *config {
-	setConfigFile()
-
-	if err := viper.ReadInConfig(); err != nil {
-		if _, statErr := os.Stat(CfgPath); os.IsNotExist(statErr) {
-			viper.SafeWriteConfigAs(CfgPath)
-		} else {
-			fmt.Println("Error reading config file:", err)
-		}
-	}
-
 	var cfg config
 
-	if err := viper.Unmarshal(&cfg); err != nil {
+	if err := loadMerged().Unmarshal(&cfg); err != nil {
 		fmt.Println("Error unmarshalling config:", err)
 	}
 
 	return &cfg
 }
 
-func SetDomain(domain *Domain) {
-	setConfigFile()
-
-	if err := viper.MergeInConfig(); err != nil {
-		if _, statErr := os.Stat(CfgPath); os.IsNotExist(statErr) {
-			viper.SafeWriteConfigAs(CfgPath)
-		} else {
-			fmt.Println("Error reading config file:", err)
-		}
-	}
-
-	viper.Set("domains."+domain.Name, domain)
-	viper.Set("active", domain.Name)
-	viper.WriteConfig()
-}
-
-// SetDomainHeader sets a single header/metadata key on an existing domain
-// without changing which domain is active - unlike SetDomain, which always
-// makes the saved domain the active one.
-func SetDomainHeader(name, key, value string) error {
-	domain, err := LoadDomain(name)
+func SetDomain(domain *Domain) error {
+	v, err := loadWriteTarget()
 	if err != nil {
 		return err
 	}
 
-	setConfigFile()
+	v.Set("domains."+domain.Name, domain)
+	v.Set("active", domain.Name)
 
-	if err := viper.MergeInConfig(); err != nil {
-		if _, statErr := os.Stat(CfgPath); os.IsNotExist(statErr) {
-			viper.SafeWriteConfigAs(CfgPath)
-		} else {
-			fmt.Println("Error reading config file:", err)
-		}
+	return v.WriteConfig()
+}
+
+// SetDomainHeader sets a single header/metadata key on an existing domain
+// without changing which domain is active - unlike SetDomain, which always
+// makes the saved domain the active one. Only the headers are written, and
+// only to WritePath, so the domain may be defined in an earlier config file.
+func SetDomainHeader(name, key, value string) error {
+	if _, err := LoadDomain(name); err != nil {
+		return err
 	}
 
-	if domain.Headers == nil {
-		domain.Headers = make(map[string]string)
+	v, err := loadWriteTarget()
+	if err != nil {
+		return err
 	}
-	domain.Headers[key] = value
 
-	viper.Set("domains."+name, domain)
+	headersKey := "domains." + name + ".headers"
 
-	return viper.WriteConfig()
+	headers := v.GetStringMapString(headersKey)
+	if headers == nil {
+		headers = make(map[string]string)
+	}
+	headers[key] = value
+
+	v.Set(headersKey, headers)
+
+	return v.WriteConfig()
 }
 
 func RemoveDomain(nameToRemove string) error {
-	setConfigFile()
+	merged := loadMerged()
 
-	if err := viper.ReadInConfig(); err != nil {
-		return fmt.Errorf("error reading config: %w", err)
-	}
-
-	if !viper.IsSet("domains." + nameToRemove) {
+	if !merged.IsSet("domains." + nameToRemove) {
 		return fmt.Errorf("Domain %q does not exist in your list of domains. See domains with `apix list`\n", nameToRemove)
 	}
 
-	if viper.GetString("active") == nameToRemove {
+	if merged.GetString("active") == nameToRemove {
 		return fmt.Errorf("Unable to remove %q as it is currently your active domain.\n", nameToRemove)
 	}
 
-	domainsMap := viper.GetStringMap("domains")
-	delete(domainsMap, nameToRemove)
-	viper.Set("domains", domainsMap)
+	v, err := loadWriteTarget()
+	if err != nil {
+		return err
+	}
 
-	if err := viper.WriteConfig(); err != nil {
+	if !v.IsSet("domains." + nameToRemove) {
+		return fmt.Errorf("Domain %q is defined in another config file, remove it from there.\n", nameToRemove)
+	}
+
+	domainsMap := v.GetStringMap("domains")
+	delete(domainsMap, nameToRemove)
+	v.Set("domains", domainsMap)
+
+	if err := v.WriteConfig(); err != nil {
 		return fmt.Errorf("Error writing config: %w\n", err)
 	}
 

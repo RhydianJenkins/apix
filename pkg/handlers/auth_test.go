@@ -45,7 +45,7 @@ func TestRunAuth_SetsDomainEnvVar(t *testing.T) {
 
 func TestRunAuth_SetsConfigEnvVar(t *testing.T) {
 	tempDir := t.TempDir()
-	config.CfgPath = filepath.Join(tempDir, "custom.yaml")
+	config.CfgPaths = []string{filepath.Join(tempDir, "custom.yaml")}
 	viper.Reset()
 
 	outFile := filepath.Join(tempDir, "config-path.txt")
@@ -66,8 +66,8 @@ func TestRunAuth_SetsConfigEnvVar(t *testing.T) {
 		t.Fatalf("unexpected error reading command output: %v", err)
 	}
 
-	if string(got) != config.CfgPath {
-		t.Errorf("expected APIX_CONFIG to be %q, got %q", config.CfgPath, string(got))
+	if want := strings.Join(config.CfgPaths, string(os.PathListSeparator)); string(got) != want {
+		t.Errorf("expected APIX_CONFIG to be %q, got %q", want, string(got))
 	}
 }
 
@@ -113,7 +113,7 @@ func TestRunAuth_NoAuthConfigured(t *testing.T) {
 
 func TestAuthHandler_NamedDomain_DoesNotChangeActive(t *testing.T) {
 	tempDir := t.TempDir()
-	config.CfgPath = filepath.Join(tempDir, ".apix.yaml")
+	config.CfgPaths = []string{filepath.Join(tempDir, ".apix.yaml")}
 	viper.Reset()
 
 	outFile := filepath.Join(tempDir, "domain.txt")
@@ -148,7 +148,7 @@ func TestAuthHandler_NamedDomain_DoesNotChangeActive(t *testing.T) {
 
 func TestAuthHandler_All(t *testing.T) {
 	tempDir := t.TempDir()
-	config.CfgPath = filepath.Join(tempDir, ".apix.yaml")
+	config.CfgPaths = []string{filepath.Join(tempDir, ".apix.yaml")}
 	viper.Reset()
 
 	goodMarker := filepath.Join(tempDir, "good.txt")
@@ -189,5 +189,36 @@ func TestAuthHandler_AllWithDomainArg_Errors(t *testing.T) {
 	err := AuthHandler(cmd, []string{"some-domain"})
 	if err == nil {
 		t.Fatal("expected an error when combining --all with a domain name, got nil")
+	}
+}
+
+func TestRunAuth_SetsConfigEnvVar_MultipleFiles(t *testing.T) {
+	tempDir := t.TempDir()
+	config.CfgPaths = []string{
+		filepath.Join(tempDir, "tracked.yaml"),
+		filepath.Join(tempDir, "private.yaml"),
+	}
+
+	outFile := filepath.Join(tempDir, "config-path.txt")
+
+	domain := &config.Domain{
+		Name: "auth-api",
+		Auth: &config.AuthOptions{
+			Command: "printf '%s' \"$APIX_CONFIG\" > " + outFile,
+		},
+	}
+
+	if err := runAuth(domain); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got, err := os.ReadFile(outFile)
+	if err != nil {
+		t.Fatalf("unexpected error reading command output: %v", err)
+	}
+
+	want := config.CfgPaths[0] + string(os.PathListSeparator) + config.CfgPaths[1]
+	if string(got) != want {
+		t.Errorf("expected APIX_CONFIG to be %q, got %q", want, string(got))
 	}
 }

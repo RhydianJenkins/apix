@@ -15,7 +15,7 @@ import (
 
 func TestShowHandler(t *testing.T) {
 	tempDir := t.TempDir()
-	config.CfgPath = filepath.Join(tempDir, ".apix.yaml")
+	config.CfgPaths = []string{filepath.Join(tempDir, ".apix.yaml")}
 	viper.Reset()
 
 	specPath := filepath.Join(tempDir, "spec.yaml")
@@ -57,7 +57,7 @@ paths:
 
 func TestShowHandlerUnknownPath(t *testing.T) {
 	tempDir := t.TempDir()
-	config.CfgPath = filepath.Join(tempDir, ".apix.yaml")
+	config.CfgPaths = []string{filepath.Join(tempDir, ".apix.yaml")}
 	viper.Reset()
 
 	specPath := filepath.Join(tempDir, "spec.yaml")
@@ -92,7 +92,7 @@ paths:
 
 func TestShowHandlerNoSpecConnected(t *testing.T) {
 	tempDir := t.TempDir()
-	config.CfgPath = filepath.Join(tempDir, ".apix.yaml")
+	config.CfgPaths = []string{filepath.Join(tempDir, ".apix.yaml")}
 	viper.Reset()
 
 	config.SetDomain(&config.Domain{

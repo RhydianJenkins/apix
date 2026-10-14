@@ -14,7 +14,7 @@ func setActiveDomain(t *testing.T, domain *config.Domain) {
 	t.Helper()
 
 	tempDir := t.TempDir()
-	config.CfgPath = filepath.Join(tempDir, ".apix.yaml")
+	config.CfgPaths = []string{filepath.Join(tempDir, ".apix.yaml")}
 	viper.Reset()
 
 	config.SetDomain(domain)

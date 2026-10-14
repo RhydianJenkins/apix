@@ -54,7 +54,7 @@ func grpcTarget(domain *config.Domain) (string, error) {
 	}
 
 	if domain.GRPC == nil || domain.GRPC.Port == 0 {
-		return "", fmt.Errorf("domain %q has no grpc port configured; set it with --port or grpc.port in %s", domain.Name, config.CfgPath)
+		return "", fmt.Errorf("domain %q has no grpc port configured; set it with --port or grpc.port in %s", domain.Name, config.WritePath())
 	}
 
 	return net.JoinHostPort(domain.Base, strconv.Itoa(domain.GRPC.Port)), nil

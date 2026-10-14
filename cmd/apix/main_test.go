@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -17,7 +18,7 @@ func TestRootCmd_ConfigFlag_OverridesCfgPath(t *testing.T) {
 	tempDir := t.TempDir()
 	customPath := filepath.Join(tempDir, "custom.yaml")
 
-	config.CfgPath = filepath.Join(tempDir, "unused.yaml") // sanity: should be overridden, not used
+	config.CfgPaths = []string{filepath.Join(tempDir, "unused.yaml")} // sanity: should be overridden, not used
 	viper.Reset()
 
 	cmd := newRootCmd("test")
@@ -27,8 +28,8 @@ func TestRootCmd_ConfigFlag_OverridesCfgPath(t *testing.T) {
 		t.Fatalf("expected Execute() to return nil, got: %v", err)
 	}
 
-	if config.CfgPath != customPath {
-		t.Fatalf("expected CfgPath to be %q, got %q", customPath, config.CfgPath)
+	if !slices.Equal(config.CfgPaths, []string{customPath}) {
+		t.Fatalf("expected CfgPaths to be %q, got %q", customPath, config.CfgPaths)
 	}
 
 	if _, err := os.Stat(customPath); err != nil {
@@ -52,8 +53,33 @@ func TestRootCmd_ConfigFlag_ExpandsTilde(t *testing.T) {
 	}
 
 	want := filepath.Join(fakeHome, "custom.yaml")
-	if config.CfgPath != want {
-		t.Fatalf("expected CfgPath to be %q, got %q", want, config.CfgPath)
+	if !slices.Equal(config.CfgPaths, []string{want}) {
+		t.Fatalf("expected CfgPaths to be %q, got %q", want, config.CfgPaths)
+	}
+}
+
+func TestRootCmd_ConfigFlag_Repeated_AccumulatesInOrder(t *testing.T) {
+	t.Cleanup(func() { viper.Reset() })
+
+	tempDir := t.TempDir()
+	first := filepath.Join(tempDir, "first.yaml")
+	second := filepath.Join(tempDir, "second.yaml")
+
+	config.CfgPaths = []string{filepath.Join(tempDir, "default.yaml")}
+
+	cmd := newRootCmd("test")
+	cmd.SetArgs([]string{"-c", first, "-c", second, "list"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("expected Execute() to return nil, got: %v", err)
+	}
+
+	if want := []string{first, second}; !slices.Equal(config.CfgPaths, want) {
+		t.Fatalf("expected CfgPaths to be %q, got %q", want, config.CfgPaths)
+	}
+
+	if config.WritePath() != second {
+		t.Fatalf("expected WritePath to be %q, got %q", second, config.WritePath())
 	}
 }
 
@@ -69,7 +95,7 @@ func TestRootCmd_ConfigFlag_AppliesDuringCompletion(t *testing.T) {
 	specPath := writeTestOAS(t)
 	customConfigPath := filepath.Join(tempDir, "custom.yaml")
 
-	config.CfgPath = customConfigPath
+	config.CfgPaths = []string{customConfigPath}
 	viper.Reset()
 	config.SetDomain(&config.Domain{
 		Name: "testapi",
@@ -80,7 +106,7 @@ func TestRootCmd_ConfigFlag_AppliesDuringCompletion(t *testing.T) {
 	// Point the "default" CfgPath somewhere with no valid OAS spec, so this
 	// test fails loudly if completion silently falls back to it instead of
 	// honouring -c.
-	config.CfgPath = filepath.Join(tempDir, "default.yaml")
+	config.CfgPaths = []string{filepath.Join(tempDir, "default.yaml")}
 	viper.Reset()
 
 	cmd := newRootCmd("test")
@@ -105,7 +131,7 @@ func TestRootCmd_NoConfigFlag_LeavesCfgPathUnchanged(t *testing.T) {
 
 	tempDir := t.TempDir()
 	existing := filepath.Join(tempDir, ".apix.yaml")
-	config.CfgPath = existing
+	config.CfgPaths = []string{existing}
 	viper.Reset()
 
 	cmd := newRootCmd("test")
@@ -115,7 +141,26 @@ func TestRootCmd_NoConfigFlag_LeavesCfgPathUnchanged(t *testing.T) {
 		t.Fatalf("expected Execute() to return nil, got: %v", err)
 	}
 
-	if config.CfgPath != existing {
-		t.Fatalf("expected CfgPath to remain %q, got %q", existing, config.CfgPath)
+	if !slices.Equal(config.CfgPaths, []string{existing}) {
+		t.Fatalf("expected CfgPaths to remain %q, got %q", existing, config.CfgPaths)
+	}
+}
+
+func TestRootCmd_ConfigFlag_Repeated_ExpandsTildePerValue(t *testing.T) {
+	t.Cleanup(func() { viper.Reset() })
+
+	fakeHome := t.TempDir()
+	t.Setenv("HOME", fakeHome)
+
+	cmd := newRootCmd("test")
+	cmd.SetArgs([]string{"-c", "~/tracked.yaml", "-c", "~/private.yaml", "list"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("expected Execute() to return nil, got: %v", err)
+	}
+
+	want := []string{filepath.Join(fakeHome, "tracked.yaml"), filepath.Join(fakeHome, "private.yaml")}
+	if !slices.Equal(config.CfgPaths, want) {
+		t.Fatalf("expected CfgPaths to be %q, got %q", want, config.CfgPaths)
 	}
 }
