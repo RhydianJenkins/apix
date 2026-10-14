@@ -8,14 +8,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// resolveDomainName picks the domain a command should act on: an explicit
-// --domain flag wins, then the APIX_DOMAIN environment variable (set by
-// `apix auth` when it runs a domain's auth command), then the active domain.
 func resolveDomainName(cmd *cobra.Command) string {
 	if domain, _ := cmd.Flags().GetString("domain"); domain != "" {
 		return domain
 	}
 
+	// we set `APIX_DOMAIN` when running as a sub-process in `apix auth`
 	if domain := os.Getenv("APIX_DOMAIN"); domain != "" {
 		return domain
 	}
@@ -23,10 +21,6 @@ func resolveDomainName(cmd *cobra.Command) string {
 	return config.GetActiveDomain().Name
 }
 
-// SetHeaderHandler persists a single header/metadata value on a domain
-// without changing the active domain. It's the mechanism an `auth.command`
-// uses to save whatever credential it mints - apix itself never inspects or
-// captures the command's output.
 func SetHeaderHandler(cmd *cobra.Command, args []string) error {
 	key := args[0]
 	value := args[1]
