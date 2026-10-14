@@ -33,16 +33,24 @@ func ExpandPath(path string) (string, error) {
 // $APIX_CONFIG (an OS path list, so a single path works as before) or
 // ~/.apix.yaml.
 func defaultCfgPaths() []string {
-	env := os.Getenv("APIX_CONFIG")
-	if env == "" {
-		return []string{filepath.Join(os.Getenv("HOME"), ".apix.yaml")}
+	var paths []string
+
+	// SplitList keeps empty entries (e.g. from a trailing ":"), which would
+	// otherwise leave WritePath() empty.
+	for _, p := range filepath.SplitList(os.Getenv("APIX_CONFIG")) {
+		if p == "" {
+			continue
+		}
+
+		if expanded, err := ExpandPath(p); err == nil {
+			p = expanded
+		}
+
+		paths = append(paths, p)
 	}
 
-	paths := filepath.SplitList(env)
-	for i, p := range paths {
-		if expanded, err := ExpandPath(p); err == nil {
-			paths[i] = expanded
-		}
+	if len(paths) == 0 {
+		return []string{filepath.Join(os.Getenv("HOME"), ".apix.yaml")}
 	}
 
 	return paths
@@ -118,8 +126,9 @@ func createEmptyConfig(path string) error {
 
 // loadMerged reads every file in CfgPaths and deep-merges them, later files
 // overriding earlier ones. A missing file is skipped, except the write target
-// which is created.
-func loadMerged() *viper.Viper {
+// which is created. Any other read or parse error is returned, so that a broken
+// layer is never silently dropped from the merged config.
+func loadMerged() (*viper.Viper, error) {
 	v := viper.New()
 	v.SetConfigType("yaml")
 
@@ -140,10 +149,10 @@ func loadMerged() *viper.Viper {
 			continue
 		}
 
-		fmt.Println("Error reading config file:", err)
+		return nil, fmt.Errorf("error reading config file %s: %w", path, err)
 	}
 
-	return v
+	return v, nil
 }
 
 // loadWriteTarget reads only WritePath, so that values merged in from earlier
@@ -169,7 +178,10 @@ func loadWriteTarget() (*viper.Viper, error) {
 }
 
 func SetActiveName(activeName string) error {
-	cfg := LoadConfig()
+	cfg, err := loadConfig()
+	if err != nil {
+		return err
+	}
 
 	if activeName == "" {
 		return fmt.Errorf("Active domain cannot be empty\n")
@@ -198,7 +210,10 @@ func GetActiveDomain() *Domain {
 }
 
 func LoadDomain(name string) (*Domain, error) {
-	cfg := LoadConfig()
+	cfg, err := loadConfig()
+	if err != nil {
+		return nil, err
+	}
 
 	domain, ok := cfg.Domains[name]
 
@@ -211,14 +226,32 @@ func LoadDomain(name string) (*Domain, error) {
 	return &domain, nil
 }
 
-func LoadConfig() *config {
-	var cfg config
-
-	if err := loadMerged().Unmarshal(&cfg); err != nil {
-		fmt.Println("Error unmarshalling config:", err)
+func loadConfig() (*config, error) {
+	v, err := loadMerged()
+	if err != nil {
+		return nil, err
 	}
 
-	return &cfg
+	var cfg config
+
+	if err := v.Unmarshal(&cfg); err != nil {
+		return nil, fmt.Errorf("error unmarshalling config: %w", err)
+	}
+
+	return &cfg, nil
+}
+
+// LoadConfig returns the merged config. For callers that cannot return an
+// error it prints the problem and returns an empty config rather than a
+// partial one with a layer silently missing.
+func LoadConfig() *config {
+	cfg, err := loadConfig()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return &config{}
+	}
+
+	return cfg
 }
 
 func SetDomain(domain *Domain) error {
@@ -261,7 +294,10 @@ func SetDomainHeader(name, key, value string) error {
 }
 
 func RemoveDomain(nameToRemove string) error {
-	merged := loadMerged()
+	merged, err := loadMerged()
+	if err != nil {
+		return err
+	}
 
 	if !merged.IsSet("domains." + nameToRemove) {
 		return fmt.Errorf("Domain %q does not exist in your list of domains. See domains with `apix list`\n", nameToRemove)
