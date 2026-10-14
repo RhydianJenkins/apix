@@ -475,3 +475,87 @@ func TestDefaultCfgPaths_ExpandsTildeInAPIXConfig(t *testing.T) {
 		t.Errorf("defaultCfgPaths() = %q, want %q", got, want)
 	}
 }
+
+func TestDefaultCfgPaths_DropsEmptyEntries(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+
+	sep := string(os.PathListSeparator)
+	defaultPath := []string{filepath.Join(home, ".apix.yaml")}
+
+	tests := []struct {
+		name string
+		env  string
+		want []string
+	}{
+		{"trailing separator", "/a.yaml" + sep, []string{"/a.yaml"}},
+		{"leading separator", sep + "/a.yaml", []string{"/a.yaml"}},
+		{"empty entry in the middle", "/a.yaml" + sep + sep + "/b.yaml", []string{"/a.yaml", "/b.yaml"}},
+		{"only separators", sep, defaultPath},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("APIX_CONFIG", tt.env)
+
+			if got := defaultCfgPaths(); !slices.Equal(got, tt.want) {
+				t.Errorf("defaultCfgPaths() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMultipleFiles_UnparsableLayer_ReturnsError(t *testing.T) {
+	tracked, private := layeredFiles(t)
+
+	if err := os.WriteFile(private, []byte("domains: [unterminated\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	before, err := os.ReadFile(tracked)
+	if err != nil {
+		t.Fatal(err)
+	}
+	privateBefore, err := os.ReadFile(private)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	checks := map[string]func() error{
+		"LoadDomain":      func() error { _, err := LoadDomain("a"); return err },
+		"SetDomainHeader": func() error { return SetDomainHeader("a", "authorization", "Bearer x") },
+		"SetActiveName":   func() error { return SetActiveName("a") },
+		"RemoveDomain":    func() error { return RemoveDomain("a") },
+	}
+
+	for name, run := range checks {
+		t.Run(name, func(t *testing.T) {
+			err := run()
+			if err == nil {
+				t.Fatal("expected an error for an unparsable config layer")
+			}
+			if !strings.Contains(err.Error(), private) {
+				t.Errorf("expected error to name %q, got: %v", private, err)
+			}
+		})
+	}
+
+	if after, _ := os.ReadFile(tracked); string(before) != string(after) {
+		t.Errorf("tracked file changed:\n%s", after)
+	}
+	if after, _ := os.ReadFile(private); string(privateBefore) != string(after) {
+		t.Errorf("broken private file was overwritten:\n%s", after)
+	}
+}
+
+func TestLoadConfig_UnparsableLayer_ReturnsEmptyConfig(t *testing.T) {
+	_, private := layeredFiles(t)
+
+	if err := os.WriteFile(private, []byte("domains: [unterminated\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if cfg := LoadConfig(); cfg.Active != "" || len(cfg.Domains) != 0 {
+		t.Errorf("expected an empty config rather than a partial one, got %+v", cfg)
+	}
+}
