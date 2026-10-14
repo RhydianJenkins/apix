@@ -11,7 +11,7 @@ import (
 
 func EditHandler(cmd *cobra.Command, args []string) {
 	editor := getEditor()
-	editCmd := exec.Command(editor, config.CfgPath)
+	editCmd := exec.Command(editor, config.WritePath())
 	editCmd.Stdin = os.Stdin
 	editCmd.Stdout = os.Stdout
 	editCmd.Stderr = os.Stderr

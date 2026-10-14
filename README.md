@@ -65,7 +65,7 @@ Available Commands:
   version     Print version information
 
 Flags:
-  -c, --config string   path to the apix config file (default ~/.apix.yaml)
+  -c, --config strings  path to an apix config file; repeat to layer files (default ~/.apix.yaml)
   -h, --help            help for apix
 
 Use "apix [command] --help" for more information about a command.
@@ -241,6 +241,14 @@ domains:
 apix set-header authorization "Bearer xyz"                 # active domain
 apix set-header authorization "Bearer xyz" --domain my-api # named domain, without switching to it
 ```
+
+To keep secrets out of a git-tracked config, layer a private file on top of it:
+
+```sh
+apix -c .apix.yaml -c .apix.private.yaml auth
+```
+
+`-c` can be repeated. Files are deep-merged in order, so later files override earlier ones, and **all writes** (`apix auth`/`set-header`, `new`, `switch`, `remove`) go to the last file. Here the `authorization` header lands in `.apix.private.yaml` and `.apix.yaml` is never touched. `$APIX_CONFIG` accepts the same list, separated by your OS path-list separator (`:` on Linux/macOS). Header names are stored lower-cased.
 
 If a request to a domain with `auth.command` configured gets back a 401 (http) or an Unauthenticated status (grpc), `apix` prints a one-line hint to run `apix auth` for that domain.
 

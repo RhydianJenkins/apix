@@ -116,7 +116,10 @@ func NewHandler(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	config.SetDomain(domain)
+	if err := config.SetDomain(domain); err != nil {
+		fmt.Fprintf(os.Stderr, "unable to save domain: %v\n", err)
+		os.Exit(1)
+	}
 
 	println("New domain added and active.")
 }

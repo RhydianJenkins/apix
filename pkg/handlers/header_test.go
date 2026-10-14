@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -17,7 +18,7 @@ func newSetHeaderTestCmd() *cobra.Command {
 
 func TestSetHeaderHandler_DomainFlag(t *testing.T) {
 	tempDir := t.TempDir()
-	config.CfgPath = filepath.Join(tempDir, ".apix.yaml")
+	config.CfgPaths = []string{filepath.Join(tempDir, ".apix.yaml")}
 	viper.Reset()
 
 	config.SetDomain(&config.Domain{Name: "a", Base: "https://a.example.com"})
@@ -47,7 +48,7 @@ func TestSetHeaderHandler_DomainFlag(t *testing.T) {
 
 func TestSetHeaderHandler_EnvVar(t *testing.T) {
 	tempDir := t.TempDir()
-	config.CfgPath = filepath.Join(tempDir, ".apix.yaml")
+	config.CfgPaths = []string{filepath.Join(tempDir, ".apix.yaml")}
 	viper.Reset()
 
 	config.SetDomain(&config.Domain{Name: "a", Base: "https://a.example.com"})
@@ -74,7 +75,7 @@ func TestSetHeaderHandler_EnvVar(t *testing.T) {
 
 func TestSetHeaderHandler_DomainFlag_OverridesEnvVar(t *testing.T) {
 	tempDir := t.TempDir()
-	config.CfgPath = filepath.Join(tempDir, ".apix.yaml")
+	config.CfgPaths = []string{filepath.Join(tempDir, ".apix.yaml")}
 	viper.Reset()
 
 	config.SetDomain(&config.Domain{Name: "a", Base: "https://a.example.com"})
@@ -101,7 +102,7 @@ func TestSetHeaderHandler_DomainFlag_OverridesEnvVar(t *testing.T) {
 
 func TestSetHeaderHandler_FallsBackToActiveDomain(t *testing.T) {
 	tempDir := t.TempDir()
-	config.CfgPath = filepath.Join(tempDir, ".apix.yaml")
+	config.CfgPaths = []string{filepath.Join(tempDir, ".apix.yaml")}
 	viper.Reset()
 
 	config.SetDomain(&config.Domain{Name: "active-api", Base: "https://active.example.com"})
@@ -124,7 +125,7 @@ func TestSetHeaderHandler_FallsBackToActiveDomain(t *testing.T) {
 
 func TestSetHeaderHandler_UnknownDomain(t *testing.T) {
 	tempDir := t.TempDir()
-	config.CfgPath = filepath.Join(tempDir, ".apix.yaml")
+	config.CfgPaths = []string{filepath.Join(tempDir, ".apix.yaml")}
 	viper.Reset()
 
 	cmd := newSetHeaderTestCmd()
@@ -132,5 +133,41 @@ func TestSetHeaderHandler_UnknownDomain(t *testing.T) {
 
 	if err := SetHeaderHandler(cmd, []string{"authorization", "value"}); err == nil {
 		t.Fatal("expected an error for an unknown domain, got nil")
+	}
+}
+
+func TestSetHeaderHandler_MultipleFiles_WritesToLastFile(t *testing.T) {
+	tempDir := t.TempDir()
+	tracked := filepath.Join(tempDir, ".apix.yaml")
+	private := filepath.Join(tempDir, ".apix.private.yaml")
+
+	config.CfgPaths = []string{tracked}
+	config.SetDomain(&config.Domain{Name: "a", Base: "https://a.example.com"})
+
+	before, err := os.ReadFile(tracked)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	config.CfgPaths = []string{tracked, private}
+
+	if err := SetHeaderHandler(newSetHeaderTestCmd(), []string{"authorization", "Bearer xyz"}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	after, err := os.ReadFile(tracked)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(before) != string(after) {
+		t.Errorf("tracked file changed:\n%s", after)
+	}
+
+	loaded, err := config.LoadDomain("a")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if loaded.Headers["authorization"] != "Bearer xyz" {
+		t.Errorf("expected authorization header to be set, got: %+v", loaded.Headers)
 	}
 }

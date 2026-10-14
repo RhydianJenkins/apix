@@ -73,7 +73,7 @@ func newRootCmd(version string) *cobra.Command {
 			cmd.Help()
 		},
 	}
-	rootCmd.PersistentFlags().VarP(&cfgPathValue{}, "config", "c", "path to the apix config file (default ~/.apix.yaml)")
+	rootCmd.PersistentFlags().VarP(&cfgPathValue{}, "config", "c", "path to an apix config file; repeat to layer files, later ones override earlier ones and receive all writes (default ~/.apix.yaml)")
 
 	newCmd := &cobra.Command{
 		Use:     "new [name] [base]",
@@ -169,10 +169,12 @@ func expandConfigPath(path string) (string, error) {
 	return filepath.Join(home, strings.TrimPrefix(path, "~/")), nil
 }
 
-type cfgPathValue struct{}
+// cfgPathValue collects repeated -c flags into config.CfgPaths. The first
+// occurrence replaces the default list, later ones append.
+type cfgPathValue struct{ set bool }
 
-func (c *cfgPathValue) String() string { return "" }
-func (c *cfgPathValue) Type() string   { return "string" }
+func (c *cfgPathValue) String() string { return strings.Join(config.CfgPaths, ",") }
+func (c *cfgPathValue) Type() string   { return "stringArray" }
 
 func (c *cfgPathValue) Set(path string) error {
 	expanded, err := expandConfigPath(path)
@@ -180,7 +182,12 @@ func (c *cfgPathValue) Set(path string) error {
 		return err
 	}
 
-	config.CfgPath = expanded
+	if !c.set {
+		config.CfgPaths = nil
+		c.set = true
+	}
+
+	config.CfgPaths = append(config.CfgPaths, expanded)
 
 	return nil
 }
