@@ -18,7 +18,7 @@ func newAuthCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "auth [name]",
 		Short:             "Run a domain's configured auth command (see `auth.command` in config)",
-		Example:           "apix auth\napix auth junifer-uat\napix auth --all",
+		Example:           "apix auth\napix auth my-api-domain\napix auth --all",
 		Args:              cobra.MaximumNArgs(1),
 		SilenceUsage:      true,
 		RunE:              handlers.AuthHandler,
