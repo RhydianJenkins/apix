@@ -72,7 +72,7 @@ func newRootCmd(version string) *cobra.Command {
 			cmd.Help()
 		},
 	}
-	rootCmd.PersistentFlags().VarP(&cfgPathValue{}, "config", "c", "path to an apix config file; repeat to layer files, later ones override earlier ones and receive all writes (default ~/.apix.yaml)")
+	rootCmd.PersistentFlags().VarP(&cfgPathValue{}, "config", "c", "path to an apix config file; repeat to layer files, later ones override earlier ones and receive all writes")
 
 	newCmd := &cobra.Command{
 		Use:     "new [name] [base]",
