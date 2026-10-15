@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/rhydianjenkins/apix/v3/pkg/config"
-	"github.com/rhydianjenkins/apix/v3/pkg/grpcclient"
+	"github.com/rhydianjenkins/apix/v3/internal/config"
+	"github.com/rhydianjenkins/apix/v3/internal/grpcclient"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rhydianjenkins/apix/v3/internal/config"
 	"github.com/rhydianjenkins/apix/v3/internal/grpctest"
-	"github.com/rhydianjenkins/apix/v3/pkg/config"
 )
 
 func TestGRPCHandler(t *testing.T) {

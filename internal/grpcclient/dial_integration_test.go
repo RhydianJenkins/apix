@@ -3,9 +3,9 @@ package grpcclient_test
 import (
 	"testing"
 
+	"github.com/rhydianjenkins/apix/v3/internal/config"
+	"github.com/rhydianjenkins/apix/v3/internal/grpcclient"
 	"github.com/rhydianjenkins/apix/v3/internal/grpctest"
-	"github.com/rhydianjenkins/apix/v3/pkg/config"
-	"github.com/rhydianjenkins/apix/v3/pkg/grpcclient"
 )
 
 func TestDial_WithSeparatePort(t *testing.T) {

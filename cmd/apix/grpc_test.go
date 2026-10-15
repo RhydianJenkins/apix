@@ -3,8 +3,8 @@ package main
 import (
 	"testing"
 
+	"github.com/rhydianjenkins/apix/v3/internal/config"
 	"github.com/rhydianjenkins/apix/v3/internal/grpctest"
-	"github.com/rhydianjenkins/apix/v3/pkg/config"
 )
 
 func TestGRPCCommand_UnknownMethodReturnsError(t *testing.T) {
