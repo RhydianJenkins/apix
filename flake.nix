@@ -10,8 +10,10 @@
         flake-utils.lib.eachDefaultSystem (system:
             let
                 pkgs = import nixpkgs { inherit system; };
-                version = pkgs.lib.strings.trim (builtins.readFile ./VERSION);
-                buildCmd = ''go build -ldflags "-X main.version=$(cat VERSION)" -o apix ./cmd/apix'';
+                rev = self.shortRev or self.dirtyShortRev or "unknown";
+                lastReleased = (builtins.fromJSON (builtins.readFile ./.release-please-manifest.json)).".";
+                version = "${lastReleased}+${rev}";
+                buildCmd = ''go build -ldflags "-X main.version=${version}" -o apix ./cmd/apix'';
                 vetCmd = "go vet ./...";
                 testCmd = "go test -v ./...";
             in {
@@ -60,31 +62,6 @@
                             text = buildCmd;
                         }}/bin/build";
                         meta.description = "Build apix into a binary";
-                    };
-
-                    release = {
-                        type = "app";
-                        program = "${pkgs.writeShellApplication {
-                            name = "release";
-                            runtimeInputs = [ pkgs.go pkgs.git ];
-                            text = ''
-                                ${buildCmd}
-                                ${vetCmd}
-                                ${testCmd}
-
-                                version="v$(cat VERSION)"
-
-                                if git rev-parse "$version" >/dev/null 2>&1; then
-                                    echo "Tag $version already exists"
-                                    exit 1
-                                fi
-
-                                git tag -a "$version" -m "Release $version"
-                                git push origin "$version"
-                                echo "Released $version"
-                            '';
-                        }}/bin/release";
-                        meta.description = "Build, vet, and test, then tag and push a release using the version in VERSION";
                     };
                 };
 
