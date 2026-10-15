@@ -22,18 +22,19 @@
                         src = ./.;
                         vendorHash = "sha256-8UYvuu60pwaZm/O1f8/atlCFsJdExZy/MUmOobgGXe8=";
                         ldflags = [ "-X main.version=${version}" ];
+                        doCheck = false;
                     };
                     default = self.packages.${system}.apix;
                 };
 
                 checks = {
-                    test = self.packages.${system}.apix;
-
-                    vet = self.packages.${system}.apix.overrideAttrs (_: {
-                        pname = "apix-vet";
+                    test = self.packages.${system}.apix.overrideAttrs (_: {
+                        pname = "apix-checks";
+                        doCheck = true;
                         checkPhase = ''
                             runHook preCheck
                             ${vetCmd}
+                            ${testCmd}
                             runHook postCheck
                         '';
                     });
