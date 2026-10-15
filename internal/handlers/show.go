@@ -3,8 +3,8 @@ package handlers
 import (
 	"fmt"
 
-	"github.com/rhydianjenkins/apix/v3/pkg/config"
-	"github.com/rhydianjenkins/apix/v3/pkg/oas"
+	"github.com/rhydianjenkins/apix/v3/internal/config"
+	"github.com/rhydianjenkins/apix/v3/internal/oas"
 	"github.com/spf13/cobra"
 )
 

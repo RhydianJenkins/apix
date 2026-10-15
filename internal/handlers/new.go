@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/rhydianjenkins/apix/v3/pkg/config"
+	"github.com/rhydianjenkins/apix/v3/internal/config"
 	"github.com/spf13/cobra"
 )
 
