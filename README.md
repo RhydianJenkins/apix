@@ -151,3 +151,10 @@ domains:
 ```
 
 </details>
+
+<details>
+<summary><strong>How do I contribute?</strong></summary>
+
+Fork, branch, and open a PR. Use [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, etc.) - versioning and `CHANGELOG.md` are generated from them automatically.
+
+</details>
