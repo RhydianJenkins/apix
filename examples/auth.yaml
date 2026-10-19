@@ -1,0 +1,14 @@
+active: auth-example
+domains:
+    auth-example:
+        base: https://api.example.com
+        # bring your own bearer token and set it as a header
+        auth:
+            command: apix set-header authorization "Bearer $(date +%s)"
+        protocol: http
+    auth-user-pass-example:
+        base: https://api.example.com
+        # alternatively, you can set a user/pass for http endpoints
+        http:
+            user: foo
+            pass: bar

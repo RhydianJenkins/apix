@@ -32,7 +32,7 @@ nix run .#build && ./apix
 Want to try it out first? Point `-c` at the bundled example config to query the public [PokéAPI](https://pokeapi.co/) without setting anything up:
 
 ```sh
-apix -c .apix.example.yaml get /api/v2/pokemon/ditto
+apix -c ./examples/pokeapi.yaml get /api/v2/pokemon/ditto
 ```
 
 ## 🚀 Usage
