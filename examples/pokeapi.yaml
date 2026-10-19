@@ -3,6 +3,8 @@ domains:
     pokemon-example:
         base: https://pokeapi.co/
         http:
+            # optional for tab-completion or discovery to work
+            # this can also be a /path/to/local/oas.{yaml|json}
             openapispecpath: https://raw.githubusercontent.com/PokeAPI/pokeapi/master/openapi.yml
         headers:
             X-foo: bar
