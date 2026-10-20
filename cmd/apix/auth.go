@@ -25,7 +25,7 @@ func newAuthCommand() *cobra.Command {
 		ValidArgsFunction: getDomainNames,
 	}
 
-	cmd.Flags().Bool("all", false, "run every domain's configured auth command")
+	cmd.Flags().BoolP("all", "a", false, "run every domain's configured auth command")
 
 	return cmd
 }
