@@ -10,8 +10,6 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-// apix only ever sends one request on the stream at a time and waits for
-// its matching response before sending the next.
 type reflectionStream struct {
 	stream reflectionpb.ServerReflection_ServerReflectionInfoClient
 }
@@ -57,9 +55,6 @@ func (r *reflectionStream) listServices() ([]string, error) {
 	return services, nil
 }
 
-// symbol is a type, service, or method full name. The response includes its
-// transitive dependencies, but not ones already returned earlier on this
-// stream.
 func (r *reflectionStream) fileContainingSymbol(symbol string) ([]*descriptorpb.FileDescriptorProto, error) {
 	resp, err := r.send(&reflectionpb.ServerReflectionRequest{
 		MessageRequest: &reflectionpb.ServerReflectionRequest_FileContainingSymbol{

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/rhydianjenkins/apix/v3/internal/config"
+	"github.com/rhydianjenkins/apix/v3/internal/grpctest"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -108,6 +109,72 @@ func TestShowHandlerNoSpecConnected(t *testing.T) {
 
 	if !strings.Contains(output, "No OpenAPI spec is connected") {
 		t.Errorf("expected a helpful 'no OpenAPI spec connected' error, got: %s", output)
+	}
+}
+
+func TestShowHandler_GRPC(t *testing.T) {
+	tempDir := t.TempDir()
+	config.CfgPaths = []string{filepath.Join(tempDir, ".apix.yaml")}
+	viper.Reset()
+
+	srv, err := grpctest.NewServer()
+	if err != nil {
+		t.Fatalf("failed to build test server: %v", err)
+	}
+	defer srv.Close()
+
+	go srv.Serve()
+
+	config.SetDomain(&config.Domain{
+		Name: "testgrpc",
+		Base: srv.Host(),
+		GRPC: &config.GRPCOptions{Insecure: true, Port: srv.Port()},
+	})
+
+	cmd := &cobra.Command{}
+	cmd.Flags().StringSliceP("header", "H", []string{}, "")
+
+	output := captureStdout(t, func() {
+		ShowHandler(cmd, []string{grpctest.MethodName})
+	})
+
+	if !strings.Contains(output, grpctest.ServiceName+"/"+grpctest.MethodName) {
+		t.Errorf("expected output to contain the resolved method name, got: %s", output)
+	}
+
+	if !strings.Contains(output, "name string") {
+		t.Errorf("expected output to contain the request field, got: %s", output)
+	}
+}
+
+func TestShowHandler_GRPCUnknownMethod(t *testing.T) {
+	tempDir := t.TempDir()
+	config.CfgPaths = []string{filepath.Join(tempDir, ".apix.yaml")}
+	viper.Reset()
+
+	srv, err := grpctest.NewServer()
+	if err != nil {
+		t.Fatalf("failed to build test server: %v", err)
+	}
+	defer srv.Close()
+
+	go srv.Serve()
+
+	config.SetDomain(&config.Domain{
+		Name: "testgrpc",
+		Base: srv.Host(),
+		GRPC: &config.GRPCOptions{Insecure: true, Port: srv.Port()},
+	})
+
+	cmd := &cobra.Command{}
+	cmd.Flags().StringSliceP("header", "H", []string{}, "")
+
+	output := captureStdout(t, func() {
+		ShowHandler(cmd, []string{"NoSuchMethod"})
+	})
+
+	if !strings.Contains(output, "failed to resolve method") {
+		t.Errorf("expected a helpful 'failed to resolve method' error, got: %s", output)
 	}
 }
 

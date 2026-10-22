@@ -9,20 +9,34 @@ import (
 )
 
 func ShowHandler(cmd *cobra.Command, args []string) {
-	path := args[0]
+	target := args[0]
 	domain := config.GetActiveDomain()
+
+	if domain.IsGRPC() {
+		headers, _ := cmd.Flags().GetStringSlice("header")
+		headerMap := ParseHeaders(headers)
+
+		summary, err := GRPCShowHandler(domain, target, headerMap)
+		if err != nil {
+			fmt.Printf("%s\n", err)
+			return
+		}
+
+		fmt.Print(summary)
+		return
+	}
 
 	if !oas.HasValidOpenAPISpec(domain) {
 		fmt.Printf("No OpenAPI spec is connected to the active domain %q.\nConnect one with `apix new --oas <path/url>` or `apix edit`.\n", domain.Name)
 		return
 	}
 
-	pathItem, err := oas.GetPathItem(path, domain.HTTP.OpenAPISpecPath)
+	pathItem, err := oas.GetPathItem(target, domain.HTTP.OpenAPISpecPath)
 
 	if err != nil {
 		fmt.Printf("%s", err)
 		return
 	}
 
-	fmt.Print(oas.FormatPathItemSummary(path, pathItem))
+	fmt.Print(oas.FormatPathItemSummary(target, pathItem))
 }
