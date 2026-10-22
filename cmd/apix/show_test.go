@@ -59,21 +59,21 @@ paths:
 	return specPath
 }
 
-func TestDiscoverCommand_HTTPNoOASReturnsError(t *testing.T) {
+func TestShowCommand_HTTPNoOASReturnsError(t *testing.T) {
 	setActiveDomain(t, &config.Domain{
 		Name: "testapi",
 		Base: "https://api.example.com",
 	})
 
 	cmd := newRootCmd("test")
-	cmd.SetArgs([]string{"discover"})
+	cmd.SetArgs([]string{"show"})
 
 	if err := cmd.Execute(); err == nil {
 		t.Fatal("expected Execute() to return an error when no OAS spec is connected, got nil")
 	}
 }
 
-func TestDiscoverCommand_HTTPListsEndpoints(t *testing.T) {
+func TestShowCommand_HTTPListsEndpoints(t *testing.T) {
 	specPath := writeTestOAS(t)
 
 	setActiveDomain(t, &config.Domain{
@@ -84,7 +84,7 @@ func TestDiscoverCommand_HTTPListsEndpoints(t *testing.T) {
 
 	var output string
 	cmd := newRootCmd("test")
-	cmd.SetArgs([]string{"discover"})
+	cmd.SetArgs([]string{"show"})
 
 	err := func() error {
 		var runErr error
@@ -105,7 +105,7 @@ func TestDiscoverCommand_HTTPListsEndpoints(t *testing.T) {
 	}
 }
 
-func TestDiscoverCommand_HTTPFiltersByMethod(t *testing.T) {
+func TestShowCommand_HTTPFiltersByMethod(t *testing.T) {
 	specPath := writeTestOAS(t)
 
 	setActiveDomain(t, &config.Domain{
@@ -115,7 +115,7 @@ func TestDiscoverCommand_HTTPFiltersByMethod(t *testing.T) {
 	})
 
 	cmd := newRootCmd("test")
-	cmd.SetArgs([]string{"discover", "--method", "post"})
+	cmd.SetArgs([]string{"show", "--method", "post"})
 
 	output := captureStdout(t, func() {
 		if err := cmd.Execute(); err != nil {
@@ -132,7 +132,7 @@ func TestDiscoverCommand_HTTPFiltersByMethod(t *testing.T) {
 	}
 }
 
-func TestDiscoverCommand_GRPCListsMethods(t *testing.T) {
+func TestShowCommand_GRPCListsMethods(t *testing.T) {
 	srv, err := grpctest.NewServer()
 	if err != nil {
 		t.Fatalf("failed to build test server: %v", err)
@@ -148,7 +148,7 @@ func TestDiscoverCommand_GRPCListsMethods(t *testing.T) {
 	})
 
 	cmd := newRootCmd("test")
-	cmd.SetArgs([]string{"discover"})
+	cmd.SetArgs([]string{"show"})
 
 	output := captureStdout(t, func() {
 		if err := cmd.Execute(); err != nil {
@@ -162,7 +162,7 @@ func TestDiscoverCommand_GRPCListsMethods(t *testing.T) {
 	}
 }
 
-func TestDiscoverCommand_GRPCDialFailureReturnsError(t *testing.T) {
+func TestShowCommand_GRPCDialFailureReturnsError(t *testing.T) {
 	setActiveDomain(t, &config.Domain{
 		Name: "testgrpc",
 		Base: "127.0.0.1",
@@ -170,9 +170,32 @@ func TestDiscoverCommand_GRPCDialFailureReturnsError(t *testing.T) {
 	})
 
 	cmd := newRootCmd("test")
-	cmd.SetArgs([]string{"discover"})
+	cmd.SetArgs([]string{"show"})
 
 	if err := cmd.Execute(); err == nil {
 		t.Fatal("expected Execute() to return an error when reflection is unreachable, got nil")
+	}
+}
+
+func TestShowCommand_HTTPShowsSingleEndpoint(t *testing.T) {
+	specPath := writeTestOAS(t)
+
+	setActiveDomain(t, &config.Domain{
+		Name: "testapi",
+		Base: "https://api.example.com",
+		HTTP: &config.HTTPOptions{OpenAPISpecPath: specPath},
+	})
+
+	cmd := newRootCmd("test")
+	cmd.SetArgs([]string{"show", "/users/{id}"})
+
+	output := captureStdout(t, func() {
+		if err := cmd.Execute(); err != nil {
+			t.Fatalf("expected Execute() to return nil, got: %v", err)
+		}
+	})
+
+	if !strings.Contains(output, "GET /users/{id}") {
+		t.Errorf("expected output to contain the endpoint summary, got:\n%s", output)
 	}
 }

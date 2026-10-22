@@ -127,8 +127,6 @@ func newRootCmd(version string) *cobra.Command {
 	}
 	rootCmd.AddCommand(removeCmd)
 
-	rootCmd.AddCommand(newDiscoverCommand())
-
 	versionCmd := &cobra.Command{
 		Use:   "version",
 		Short: "Print version information",

@@ -46,7 +46,6 @@ Available Commands:
   auth        Run a domain's configured auth command (see `auth.command` in config)
   completion  Generate the autocompletion script for the specified shell
   delete      Send a DELETE request to the active domain
-  discover    List the endpoints or gRPC methods available on the active domain
   edit        Open config in your $EDITOR
   get         Send a GET request to the active domain
   grpc        Invoke a unary gRPC method on the active domain
@@ -58,7 +57,7 @@ Available Commands:
   put         Send a PUT request to the active domain
   remove      Remove a domain from the config
   set-header  Set a header/metadata value on a domain, without changing the active domain
-  show        Show a summary of an HTTP endpoint (from the connected OpenAPI spec) or a gRPC method (via server reflection)
+  show        List the endpoints or gRPC methods on the active domain, or show a summary of one
   switch      Sets the active domain to the specified name
   version     Print version information
 
@@ -116,7 +115,7 @@ apix new myapi https://api.example.com --oas "https://api.example.domain/myOAS.j
 apix new myapi https://api.example.com --oas "/local/path/to/myOAS.yaml"
 ```
 
-Assuming you've set up shell completions, you should be able to `<tab>` complete your endpoints! You can also list them non-interactively with `apix discover` (see above).
+Assuming you've set up shell completions, you should be able to `<tab>` complete your endpoints! You can also list them non-interactively with `apix show` (see above).
 
 </details>
 
