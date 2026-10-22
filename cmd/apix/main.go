@@ -139,6 +139,8 @@ func newRootCmd(version string) *cobra.Command {
 	}
 	rootCmd.AddCommand(versionCmd)
 
+	rootCmd.AddCommand(newShowCommand())
+
 	registerHTTPCommands(rootCmd)
 	registerGRPCCommands(rootCmd)
 	registerAuthCommands(rootCmd)

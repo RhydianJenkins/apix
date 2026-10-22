@@ -146,9 +146,6 @@ func TestListMethodsDetailed(t *testing.T) {
 	}
 }
 
-// Reflection is a separate RPC from the eventual method call - servers that
-// require auth for regular RPCs typically require it for reflection too, so
-// metadata passed to ResolveMethod must reach the reflection stream itself.
 func TestResolveMethod_SendsMetadata(t *testing.T) {
 	srv, conn := startTestServer(t)
 

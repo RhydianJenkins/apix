@@ -19,35 +19,8 @@ func addHTTPNewFlags(cmd *cobra.Command) {
 }
 
 func registerHTTPCommands(rootCmd *cobra.Command) {
-	rootCmd.AddCommand(newShowCommand())
-
 	for _, method := range []string{"GET", "POST", "PUT", "PATCH", "DELETE"} {
 		rootCmd.AddCommand(createHTTPCommand(method))
-	}
-}
-
-func newShowCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:     "show [path]",
-		Short:   "Show a summary of an endpoint from the connected OpenAPI spec",
-		Example: "apix show /users/{id}",
-		Args:    cobra.ExactArgs(1),
-		Run:     handlers.ShowHandler,
-		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			activeDomain := config.GetActiveDomain()
-
-			if !oas.HasValidOpenAPISpec(activeDomain) {
-				return nil, cobra.ShellCompDirectiveNoFileComp
-			}
-
-			endpoints, err := oas.GetEndpointsValidArgs("", activeDomain.HTTP.OpenAPISpecPath)
-
-			if err != nil {
-				return nil, cobra.ShellCompDirectiveNoFileComp
-			}
-
-			return endpoints, cobra.ShellCompDirectiveNoFileComp
-		},
 	}
 }
 

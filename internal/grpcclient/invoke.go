@@ -11,11 +11,6 @@ import (
 	"google.golang.org/protobuf/types/dynamicpb"
 )
 
-// Invoke calls method on conn. reqBody, if non-nil and non-blank, is
-// treated as a JSON-encoded request message (protojson-compatible field
-// names) and unmarshalled into the RPC's input message; a nil or
-// whitespace-only reqBody results in an empty request message, same as
-// before request bodies were supported.
 func Invoke(ctx context.Context, conn *grpc.ClientConn, method *MethodInfo, reqBody *[]byte, md map[string]string) ([]byte, error) {
 	if method.IsClientStreaming || method.IsServerStreaming {
 		return nil, fmt.Errorf("method %q is a streaming RPC; apix grpc currently only supports unary methods", method.FullName)
