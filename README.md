@@ -38,8 +38,6 @@ apix -c ./examples/pokeapi.yaml get /api/v2/pokemon/ditto
 ## 🚀 Usage
 
 ```
-API eXecuter (APIX) is a CLI tool to manage API domains and make requests
-
 Usage:
   apix [command] [flags]
   apix [command]
@@ -60,15 +58,13 @@ Available Commands:
   put         Send a PUT request to the active domain
   remove      Remove a domain from the config
   set-header  Set a header/metadata value on a domain, without changing the active domain
-  show        Show a summary of an endpoint from the connected OpenAPI spec
+  show        Show a summary of an HTTP endpoint (from the connected OpenAPI spec) or a gRPC method (via server reflection)
   switch      Sets the active domain to the specified name
   version     Print version information
 
 Flags:
-  -c, --config strings  path to an apix config file; repeat to layer files (default ~/.apix.yaml)
-  -h, --help            help for apix
-
-Use "apix [command] --help" for more information about a command.
+  -c, --config stringArray   path to an apix config file; repeat to layer files, later ones override earlier ones and receive all writes (default ~/.apix.yaml)
+  -h, --help                 help for apix
 ```
 
 ## ❓ FAQ
