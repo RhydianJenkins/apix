@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -13,11 +14,16 @@ import (
 func setActiveDomain(t *testing.T, domain *config.Domain) {
 	t.Helper()
 
-	tempDir := t.TempDir()
-	config.CfgPaths = []string{filepath.Join(tempDir, ".apix.yaml")}
+	path := filepath.Join(t.TempDir(), ".apix.yaml")
+	if err := os.WriteFile(path, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	config.CfgPaths = []string{path}
 	viper.Reset()
 
-	config.SetDomain(domain)
+	if err := config.SetDomain(domain); err != nil {
+		t.Fatalf("failed to set active domain: %v", err)
+	}
 }
 
 func TestHTTPCommand_NonSuccessStatusReturnsError(t *testing.T) {

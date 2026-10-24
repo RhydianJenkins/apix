@@ -11,7 +11,7 @@ func RemoveHandler(cmd *cobra.Command, args []string) {
 	domainToRemove := args[0]
 
 	if err := config.RemoveDomain(domainToRemove); err != nil {
-		fmt.Printf("%s", err)
+		fmt.Println(err)
 		return
 	}
 

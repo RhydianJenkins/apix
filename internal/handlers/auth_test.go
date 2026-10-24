@@ -112,11 +112,9 @@ func TestRunAuth_NoAuthConfigured(t *testing.T) {
 }
 
 func TestAuthHandler_NamedDomain_DoesNotChangeActive(t *testing.T) {
-	tempDir := t.TempDir()
-	config.CfgPaths = []string{filepath.Join(tempDir, ".apix.yaml")}
-	viper.Reset()
+	configPath := newConfigFile(t)
 
-	outFile := filepath.Join(tempDir, "domain.txt")
+	outFile := filepath.Join(filepath.Dir(configPath), "domain.txt")
 
 	config.SetDomain(&config.Domain{Name: "a", Base: "https://a.example.com"})
 	config.SetDomain(&config.Domain{
@@ -132,7 +130,11 @@ func TestAuthHandler_NamedDomain_DoesNotChangeActive(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if got := config.LoadConfig().Active; got != "a" {
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got := cfg.Active; got != "a" {
 		t.Errorf("expected active domain to remain %q, got %q", "a", got)
 	}
 
@@ -147,11 +149,9 @@ func TestAuthHandler_NamedDomain_DoesNotChangeActive(t *testing.T) {
 }
 
 func TestAuthHandler_All(t *testing.T) {
-	tempDir := t.TempDir()
-	config.CfgPaths = []string{filepath.Join(tempDir, ".apix.yaml")}
-	viper.Reset()
+	configPath := newConfigFile(t)
 
-	goodMarker := filepath.Join(tempDir, "good.txt")
+	goodMarker := filepath.Join(filepath.Dir(configPath), "good.txt")
 
 	config.SetDomain(&config.Domain{Name: "no-auth", Base: "https://no-auth.example.com"})
 	config.SetDomain(&config.Domain{

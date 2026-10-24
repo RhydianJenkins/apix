@@ -16,10 +16,21 @@ func newSetHeaderTestCmd() *cobra.Command {
 	return cmd
 }
 
-func TestSetHeaderHandler_DomainFlag(t *testing.T) {
-	tempDir := t.TempDir()
-	config.CfgPaths = []string{filepath.Join(tempDir, ".apix.yaml")}
+func newConfigFile(t *testing.T) string {
+	t.Helper()
+
+	path := filepath.Join(t.TempDir(), ".apix.yaml")
+	if err := os.WriteFile(path, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	config.CfgPaths = []string{path}
 	viper.Reset()
+
+	return path
+}
+
+func TestSetHeaderHandler_DomainFlag(t *testing.T) {
+	newConfigFile(t)
 
 	config.SetDomain(&config.Domain{Name: "a", Base: "https://a.example.com"})
 	config.SetDomain(&config.Domain{Name: "b", Base: "https://b.example.com"})
@@ -32,7 +43,11 @@ func TestSetHeaderHandler_DomainFlag(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if got := config.LoadConfig().Active; got != "a" {
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got := cfg.Active; got != "a" {
 		t.Errorf("expected active domain to remain %q, got %q", "a", got)
 	}
 
@@ -47,9 +62,7 @@ func TestSetHeaderHandler_DomainFlag(t *testing.T) {
 }
 
 func TestSetHeaderHandler_EnvVar(t *testing.T) {
-	tempDir := t.TempDir()
-	config.CfgPaths = []string{filepath.Join(tempDir, ".apix.yaml")}
-	viper.Reset()
+	newConfigFile(t)
 
 	config.SetDomain(&config.Domain{Name: "a", Base: "https://a.example.com"})
 	config.SetDomain(&config.Domain{Name: "b", Base: "https://b.example.com"})
@@ -74,9 +87,7 @@ func TestSetHeaderHandler_EnvVar(t *testing.T) {
 }
 
 func TestSetHeaderHandler_DomainFlag_OverridesEnvVar(t *testing.T) {
-	tempDir := t.TempDir()
-	config.CfgPaths = []string{filepath.Join(tempDir, ".apix.yaml")}
-	viper.Reset()
+	newConfigFile(t)
 
 	config.SetDomain(&config.Domain{Name: "a", Base: "https://a.example.com"})
 	config.SetDomain(&config.Domain{Name: "b", Base: "https://b.example.com"})
@@ -101,9 +112,7 @@ func TestSetHeaderHandler_DomainFlag_OverridesEnvVar(t *testing.T) {
 }
 
 func TestSetHeaderHandler_FallsBackToActiveDomain(t *testing.T) {
-	tempDir := t.TempDir()
-	config.CfgPaths = []string{filepath.Join(tempDir, ".apix.yaml")}
-	viper.Reset()
+	newConfigFile(t)
 
 	config.SetDomain(&config.Domain{Name: "active-api", Base: "https://active.example.com"})
 
@@ -124,9 +133,7 @@ func TestSetHeaderHandler_FallsBackToActiveDomain(t *testing.T) {
 }
 
 func TestSetHeaderHandler_UnknownDomain(t *testing.T) {
-	tempDir := t.TempDir()
-	config.CfgPaths = []string{filepath.Join(tempDir, ".apix.yaml")}
-	viper.Reset()
+	newConfigFile(t)
 
 	cmd := newSetHeaderTestCmd()
 	cmd.Flags().Set("domain", "does-not-exist")
@@ -136,13 +143,59 @@ func TestSetHeaderHandler_UnknownDomain(t *testing.T) {
 	}
 }
 
-func TestSetHeaderHandler_MultipleFiles_WritesToLastFile(t *testing.T) {
+func TestSetHeaderHandler_MultipleFiles_MissingLastFile_Errors(t *testing.T) {
 	tempDir := t.TempDir()
 	tracked := filepath.Join(tempDir, ".apix.yaml")
 	private := filepath.Join(tempDir, ".apix.private.yaml")
 
+	if err := os.WriteFile(tracked, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
 	config.CfgPaths = []string{tracked}
+	viper.Reset()
 	config.SetDomain(&config.Domain{Name: "a", Base: "https://a.example.com"})
+
+	before, err := os.ReadFile(tracked)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	config.CfgPaths = []string{tracked, private}
+
+	if err := SetHeaderHandler(newSetHeaderTestCmd(), []string{"authorization", "Bearer xyz"}); err == nil {
+		t.Fatal("expected error when last config file does not exist")
+	}
+
+	after, err := os.ReadFile(tracked)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(before) != string(after) {
+		t.Errorf("tracked file changed:\n%s", after)
+	}
+
+	if _, err := os.Stat(private); !os.IsNotExist(err) {
+		t.Errorf("expected private file not to be created, stat err = %v", err)
+	}
+}
+
+func TestSetHeaderHandler_MultipleFiles_WritesOnlyToLastFile(t *testing.T) {
+	tempDir := t.TempDir()
+	tracked := filepath.Join(tempDir, ".apix.yaml")
+	private := filepath.Join(tempDir, ".apix.private.yaml")
+
+	if err := os.WriteFile(tracked, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	config.CfgPaths = []string{tracked}
+	viper.Reset()
+	if err := config.SetDomain(&config.Domain{Name: "a", Base: "https://a.example.com"}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if err := os.WriteFile(private, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
 
 	before, err := os.ReadFile(tracked)
 	if err != nil {

@@ -102,7 +102,7 @@ func newRootCmd(version string) *cobra.Command {
 		Use:   "list",
 		Short: "List all domain names saved in config",
 		Args:  cobra.ExactArgs(0),
-		Run:   handlers.ListHandler,
+		RunE:  handlers.ListHandler,
 	}
 	listCmd.Flags().BoolP("verbose", "v", false, "Also list all information about each domain")
 	rootCmd.AddCommand(listCmd)

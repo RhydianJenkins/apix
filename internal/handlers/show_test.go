@@ -11,13 +11,10 @@ import (
 	"github.com/rhydianjenkins/apix/v3/internal/config"
 	"github.com/rhydianjenkins/apix/v3/internal/grpctest"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 func TestShowHandler(t *testing.T) {
-	tempDir := t.TempDir()
-	config.CfgPaths = []string{filepath.Join(tempDir, ".apix.yaml")}
-	viper.Reset()
+	tempDir := filepath.Dir(newConfigFile(t))
 
 	specPath := filepath.Join(tempDir, "spec.yaml")
 	yamlContent := `openapi: 3.0.0
@@ -57,9 +54,7 @@ paths:
 }
 
 func TestShowHandlerUnknownPath(t *testing.T) {
-	tempDir := t.TempDir()
-	config.CfgPaths = []string{filepath.Join(tempDir, ".apix.yaml")}
-	viper.Reset()
+	tempDir := filepath.Dir(newConfigFile(t))
 
 	specPath := filepath.Join(tempDir, "spec.yaml")
 	yamlContent := `openapi: 3.0.0
@@ -92,9 +87,7 @@ paths:
 }
 
 func TestShowHandlerNoSpecConnected(t *testing.T) {
-	tempDir := t.TempDir()
-	config.CfgPaths = []string{filepath.Join(tempDir, ".apix.yaml")}
-	viper.Reset()
+	newConfigFile(t)
 
 	config.SetDomain(&config.Domain{
 		Name: "nospec",
@@ -113,9 +106,7 @@ func TestShowHandlerNoSpecConnected(t *testing.T) {
 }
 
 func TestShowHandler_GRPC(t *testing.T) {
-	tempDir := t.TempDir()
-	config.CfgPaths = []string{filepath.Join(tempDir, ".apix.yaml")}
-	viper.Reset()
+	newConfigFile(t)
 
 	srv, err := grpctest.NewServer()
 	if err != nil {
@@ -148,9 +139,7 @@ func TestShowHandler_GRPC(t *testing.T) {
 }
 
 func TestShowHandler_GRPCUnknownMethod(t *testing.T) {
-	tempDir := t.TempDir()
-	config.CfgPaths = []string{filepath.Join(tempDir, ".apix.yaml")}
-	viper.Reset()
+	newConfigFile(t)
 
 	srv, err := grpctest.NewServer()
 	if err != nil {
