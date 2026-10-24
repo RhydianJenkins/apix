@@ -291,8 +291,8 @@ func TestSetDomainHeader_MultipleFiles_WritesOnlyToLastFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := SetDomainHeader("a", "authorization", "Bearer x"); err != nil {
-		t.Fatalf("SetDomainHeader() error = %v", err)
+	if err := SetDomainHeader("a", "authorization", "Bearer x"); err == nil {
+		t.Fatal("expected error when last config file does not exist")
 	}
 
 	after, err := os.ReadFile(tracked)
@@ -303,20 +303,8 @@ func TestSetDomainHeader_MultipleFiles_WritesOnlyToLastFile(t *testing.T) {
 		t.Errorf("tracked file changed:\n%s", after)
 	}
 
-	privateContent, err := os.ReadFile(private)
-	if err != nil {
-		t.Fatalf("expected private file to be created: %v", err)
-	}
-	if strings.Contains(string(privateContent), "base:") {
-		t.Errorf("private file should only hold the headers delta:\n%s", privateContent)
-	}
-
-	d, err := LoadDomain("a")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if d.Headers["authorization"] != "Bearer x" || d.Headers["x-team"] != "one" {
-		t.Errorf("merged headers = %v", d.Headers)
+	if _, err := os.Stat(private); !os.IsNotExist(err) {
+		t.Errorf("expected private file not to be created, stat err = %v", err)
 	}
 }
 
@@ -450,10 +438,16 @@ func TestRemoveDomain_MultipleFiles_RemovesFromLastFileOnly(t *testing.T) {
 func TestLoadConfig_MissingLastFile_IsCreated(t *testing.T) {
 	_, private := layeredFiles(t)
 
-	LoadConfig()
+	cfg := LoadConfig()
+	if cfg == nil {
+		t.Fatal("expected empty config")
+	}
+	if len(cfg.Domains) != 0 || cfg.Active != "" {
+		t.Errorf("expected empty config, got %+v", cfg)
+	}
 
-	if _, err := os.Stat(private); err != nil {
-		t.Errorf("expected last file to be created: %v", err)
+	if _, err := os.Stat(private); !os.IsNotExist(err) {
+		t.Errorf("expected last file not to be created, stat err = %v", err)
 	}
 }
 
@@ -557,5 +551,38 @@ func TestLoadConfig_UnparsableLayer_ReturnsEmptyConfig(t *testing.T) {
 
 	if cfg := LoadConfig(); cfg.Active != "" || len(cfg.Domains) != 0 {
 		t.Errorf("expected an empty config rather than a partial one, got %+v", cfg)
+	}
+}
+
+func TestRequireActiveDomain(t *testing.T) {
+	tempDir := t.TempDir()
+	CfgPaths = []string{filepath.Join(tempDir, ".apix.yaml")}
+	viper.Reset()
+
+	if _, err := RequireActiveDomain(); err == nil || !strings.Contains(err.Error(), "no domains configured") {
+		t.Fatalf("expected no domains configured error, got: %v", err)
+	}
+
+	if err := os.WriteFile(CfgPaths[0], []byte("domains:\n  a:\n    base: https://a.example.com\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := RequireActiveDomain(); err == nil || !strings.Contains(err.Error(), "no active domain") {
+		t.Fatalf("expected no active domain error, got: %v", err)
+	}
+
+	if err := os.WriteFile(CfgPaths[0], []byte("active: missing\ndomains:\n  a:\n    base: https://a.example.com\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := RequireActiveDomain(); err == nil || !strings.Contains(err.Error(), "does not exist") {
+		t.Fatalf("expected active domain does not exist error, got: %v", err)
+	}
+
+	SetDomain(&Domain{Name: "a", Base: "https://a.example.com"})
+	d, err := RequireActiveDomain()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if d.Name != "a" || d.Base != "https://a.example.com" {
+		t.Fatalf("expected domain a with base https://a.example.com, got %+v", d)
 	}
 }

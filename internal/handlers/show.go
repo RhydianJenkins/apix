@@ -10,7 +10,11 @@ import (
 
 func ShowHandler(cmd *cobra.Command, args []string) {
 	target := args[0]
-	domain := config.GetActiveDomain()
+	domain, err := config.RequireActiveDomain()
+	if err != nil {
+		fmt.Printf("%s\n", err)
+		return
+	}
 
 	if domain.IsGRPC() {
 		headers, _ := cmd.Flags().GetStringSlice("header")

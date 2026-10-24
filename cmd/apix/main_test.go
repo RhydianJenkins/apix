@@ -32,8 +32,8 @@ func TestRootCmd_ConfigFlag_OverridesCfgPath(t *testing.T) {
 		t.Fatalf("expected CfgPaths to be %q, got %q", customPath, config.CfgPaths)
 	}
 
-	if _, err := os.Stat(customPath); err != nil {
-		t.Fatalf("expected config file to be created at %q: %v", customPath, err)
+	if _, err := os.Stat(customPath); !os.IsNotExist(err) {
+		t.Fatalf("expected config file not to be created at %q, stat err = %v", customPath, err)
 	}
 }
 
