@@ -18,7 +18,10 @@ func resolveDomainName(cmd *cobra.Command) string {
 		return domain
 	}
 
-	return config.GetActiveDomain().Name
+	if d, err := config.RequireActiveDomain(); err == nil {
+		return d.Name
+	}
+	return ""
 }
 
 func SetHeaderHandler(cmd *cobra.Command, args []string) error {

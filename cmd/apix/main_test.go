@@ -22,7 +22,7 @@ func TestRootCmd_ConfigFlag_OverridesCfgPath(t *testing.T) {
 	viper.Reset()
 
 	cmd := newRootCmd("test")
-	cmd.SetArgs([]string{"-c", customPath, "list"})
+	cmd.SetArgs([]string{"-c", customPath, "version"})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("expected Execute() to return nil, got: %v", err)
@@ -32,8 +32,8 @@ func TestRootCmd_ConfigFlag_OverridesCfgPath(t *testing.T) {
 		t.Fatalf("expected CfgPaths to be %q, got %q", customPath, config.CfgPaths)
 	}
 
-	if _, err := os.Stat(customPath); err != nil {
-		t.Fatalf("expected config file to be created at %q: %v", customPath, err)
+	if _, err := os.Stat(customPath); !os.IsNotExist(err) {
+		t.Fatalf("expected config file not to be created at %q, stat err = %v", customPath, err)
 	}
 }
 
@@ -46,7 +46,7 @@ func TestRootCmd_ConfigFlag_ExpandsTilde(t *testing.T) {
 	viper.Reset()
 
 	cmd := newRootCmd("test")
-	cmd.SetArgs([]string{"-c", "~/custom.yaml", "list"})
+	cmd.SetArgs([]string{"-c", "~/custom.yaml", "version"})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("expected Execute() to return nil, got: %v", err)
@@ -68,7 +68,7 @@ func TestRootCmd_ConfigFlag_Repeated_AccumulatesInOrder(t *testing.T) {
 	config.CfgPaths = []string{filepath.Join(tempDir, "default.yaml")}
 
 	cmd := newRootCmd("test")
-	cmd.SetArgs([]string{"-c", first, "-c", second, "list"})
+	cmd.SetArgs([]string{"-c", first, "-c", second, "version"})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("expected Execute() to return nil, got: %v", err)
@@ -83,11 +83,6 @@ func TestRootCmd_ConfigFlag_Repeated_AccumulatesInOrder(t *testing.T) {
 	}
 }
 
-// TestRootCmd_ConfigFlag_AppliesDuringCompletion is a regression test: Cobra's
-// shell completion (`__complete`) parses flags but never calls
-// PersistentPreRun, so a naive implementation of --config that only applies
-// the override there would silently keep using the default CfgPath during
-// tab completion. This reproduces `apix -c ./custom.yaml get <TAB>`.
 func TestRootCmd_ConfigFlag_AppliesDuringCompletion(t *testing.T) {
 	t.Cleanup(func() { viper.Reset() })
 
@@ -95,13 +90,18 @@ func TestRootCmd_ConfigFlag_AppliesDuringCompletion(t *testing.T) {
 	specPath := writeTestOAS(t)
 	customConfigPath := filepath.Join(tempDir, "custom.yaml")
 
+	if err := os.WriteFile(customConfigPath, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
 	config.CfgPaths = []string{customConfigPath}
 	viper.Reset()
-	config.SetDomain(&config.Domain{
+	if err := config.SetDomain(&config.Domain{
 		Name: "testapi",
 		Base: "https://api.example.com",
 		HTTP: &config.HTTPOptions{OpenAPISpecPath: specPath},
-	})
+	}); err != nil {
+		t.Fatalf("failed to set domain: %v", err)
+	}
 
 	// Point the "default" CfgPath somewhere with no valid OAS spec, so this
 	// test fails loudly if completion silently falls back to it instead of
@@ -135,7 +135,7 @@ func TestRootCmd_NoConfigFlag_LeavesCfgPathUnchanged(t *testing.T) {
 	viper.Reset()
 
 	cmd := newRootCmd("test")
-	cmd.SetArgs([]string{"list"})
+	cmd.SetArgs([]string{"version"})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("expected Execute() to return nil, got: %v", err)
@@ -153,7 +153,7 @@ func TestRootCmd_ConfigFlag_Repeated_ExpandsTildePerValue(t *testing.T) {
 	t.Setenv("HOME", fakeHome)
 
 	cmd := newRootCmd("test")
-	cmd.SetArgs([]string{"-c", "~/tracked.yaml", "-c", "~/private.yaml", "list"})
+	cmd.SetArgs([]string{"-c", "~/tracked.yaml", "-c", "~/private.yaml", "version"})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("expected Execute() to return nil, got: %v", err)

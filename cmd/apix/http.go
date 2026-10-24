@@ -32,7 +32,10 @@ func createHTTPCommand(method string) *cobra.Command {
 		Args:         cobra.RangeArgs(1, 2),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			activeDomain := config.GetActiveDomain()
+			activeDomain, err := config.RequireActiveDomain()
+			if err != nil {
+				return err
+			}
 
 			if activeDomain.IsGRPC() {
 				return fmt.Errorf("active domain %q is configured for grpc, not http. Use `apix grpc` instead", activeDomain.Name)
@@ -59,7 +62,10 @@ func createHTTPCommand(method string) *cobra.Command {
 			return nil
 		},
 		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			activeDomain := config.GetActiveDomain()
+			activeDomain, err := config.RequireActiveDomain()
+			if err != nil {
+				return nil, cobra.ShellCompDirectiveNoFileComp
+			}
 
 			if !oas.HasValidOpenAPISpec(activeDomain) {
 				return nil, cobra.ShellCompDirectiveNoFileComp

@@ -27,7 +27,10 @@ func newGRPCCommand() *cobra.Command {
 		Args:         cobra.ExactArgs(1),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			activeDomain := config.GetActiveDomain()
+			activeDomain, err := config.RequireActiveDomain()
+			if err != nil {
+				return err
+			}
 
 			if !activeDomain.IsGRPC() {
 				return fmt.Errorf("active domain %q is not configured for grpc (protocol %q). Use `apix new --protocol grpc` or `apix edit`", activeDomain.Name, activeDomain.Protocol())
@@ -47,7 +50,10 @@ func newGRPCCommand() *cobra.Command {
 			return nil
 		},
 		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			activeDomain := config.GetActiveDomain()
+			activeDomain, err := config.RequireActiveDomain()
+			if err != nil {
+				return nil, cobra.ShellCompDirectiveNoFileComp
+			}
 
 			if !activeDomain.IsGRPC() {
 				return nil, cobra.ShellCompDirectiveNoFileComp

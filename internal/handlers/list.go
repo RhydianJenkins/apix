@@ -7,8 +7,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func ListHandler(cmd *cobra.Command, args []string) {
-	var cfg = config.LoadConfig()
+func ListHandler(cmd *cobra.Command, args []string) error {
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		return err
+	}
+
 	var verbose, _ = cmd.Flags().GetBool("verbose")
 
 	for name := range cfg.Domains {
@@ -24,6 +28,8 @@ func ListHandler(cmd *cobra.Command, args []string) {
 			printDomainDetails(&domain)
 		}
 	}
+
+	return nil
 }
 
 func printDomainDetails(domain *config.Domain) {

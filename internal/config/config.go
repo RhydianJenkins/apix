@@ -9,9 +9,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-// ExpandPath expands a leading "~" to the user's home directory. Shells don't
-// always do this themselves (e.g. after a ":" in a path list), so it is applied
-// to -c values and $APIX_CONFIG entries alike.
 func ExpandPath(path string) (string, error) {
 	if path != "~" && !strings.HasPrefix(path, "~/") {
 		return path, nil
@@ -29,14 +26,9 @@ func ExpandPath(path string) (string, error) {
 	return filepath.Join(home, strings.TrimPrefix(path, "~/")), nil
 }
 
-// defaultCfgPaths returns the config files to use when no -c flag is given:
-// $APIX_CONFIG (an OS path list, so a single path works as before) or
-// ~/.apix.yaml.
 func defaultCfgPaths() []string {
 	var paths []string
 
-	// SplitList keeps empty entries (e.g. from a trailing ":"), which would
-	// otherwise leave WritePath() empty.
 	for _, p := range filepath.SplitList(os.Getenv("APIX_CONFIG")) {
 		if p == "" {
 			continue
@@ -56,11 +48,8 @@ func defaultCfgPaths() []string {
 	return paths
 }
 
-// CfgPaths are the config files, in merge order: later files deep-merge over
-// earlier ones. Only the last one is ever written to, see WritePath.
 var CfgPaths = defaultCfgPaths()
 
-// WritePath is the config file that receives all writes (the last of CfgPaths).
 func WritePath() string {
 	return CfgPaths[len(CfgPaths)-1]
 }
@@ -116,18 +105,6 @@ type config struct {
 	Domains map[string]Domain `mapstructure:"domains"`
 }
 
-// createEmptyConfig creates path without touching any other config's content.
-func createEmptyConfig(path string) error {
-	v := viper.New()
-	v.SetConfigType("yaml")
-
-	return v.SafeWriteConfigAs(path)
-}
-
-// loadMerged reads every file in CfgPaths and deep-merges them, later files
-// overriding earlier ones. A missing file is skipped, except the write target
-// which is created. Any other read or parse error is returned, so that a broken
-// layer is never silently dropped from the merged config.
 func loadMerged() (*viper.Viper, error) {
 	v := viper.New()
 	v.SetConfigType("yaml")
@@ -141,12 +118,7 @@ func loadMerged() (*viper.Viper, error) {
 		}
 
 		if _, statErr := os.Stat(path); os.IsNotExist(statErr) {
-			if path == WritePath() {
-				if createErr := createEmptyConfig(path); createErr != nil {
-					fmt.Println("Error creating config file:", createErr)
-				}
-			}
-			continue
+			return nil, fmt.Errorf("no config file '%s' found. Run `apix new` to create one and add your first domain", path)
 		}
 
 		return nil, fmt.Errorf("error reading config file %s: %w", path, err)
@@ -155,8 +127,13 @@ func loadMerged() (*viper.Viper, error) {
 	return v, nil
 }
 
-// loadWriteTarget reads only WritePath, so that values merged in from earlier
-// files are never persisted into it.
+func createEmptyConfig(path string) error {
+	v := viper.New()
+	v.SetConfigType("yaml")
+
+	return v.SafeWriteConfigAs(path)
+}
+
 func loadWriteTarget() (*viper.Viper, error) {
 	path := WritePath()
 
@@ -178,7 +155,7 @@ func loadWriteTarget() (*viper.Viper, error) {
 }
 
 func SetActiveName(activeName string) error {
-	cfg, err := loadConfig()
+	cfg, err := LoadConfig()
 	if err != nil {
 		return err
 	}
@@ -201,16 +178,39 @@ func SetActiveName(activeName string) error {
 	return v.WriteConfig()
 }
 
-func GetActiveDomain() *Domain {
-	cfg := LoadConfig()
+func GetActiveDomain() (*Domain, error) {
+	cfg, err := LoadConfig()
+	if err != nil {
+		return nil, err
+	}
+
 	domain := cfg.Domains[cfg.Active]
 	domain.Name = cfg.Active
 
-	return &domain
+	return &domain, nil
+}
+
+func RequireActiveDomain() (*Domain, error) {
+	cfg, err := LoadConfig()
+	if err != nil {
+		return nil, err
+	}
+	if len(cfg.Domains) == 0 {
+		return nil, fmt.Errorf("no domains configured. Run `apix new <name> <base>` to create one or see `apix --help` for configuration options")
+	}
+	if cfg.Active == "" {
+		return nil, fmt.Errorf("no active domain set. Run `apix switch <name>` to set one or `apix list` to see available domains")
+	}
+	if _, ok := cfg.Domains[cfg.Active]; !ok {
+		return nil, fmt.Errorf("active domain %q does not exist. Run `apix switch <name>` to set a valid active domain or `apix list` to see available domains", cfg.Active)
+	}
+	domain := cfg.Domains[cfg.Active]
+	domain.Name = cfg.Active
+	return &domain, nil
 }
 
 func LoadDomain(name string) (*Domain, error) {
-	cfg, err := loadConfig()
+	cfg, err := LoadConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +226,7 @@ func LoadDomain(name string) (*Domain, error) {
 	return &domain, nil
 }
 
-func loadConfig() (*config, error) {
+func LoadConfig() (*config, error) {
 	v, err := loadMerged()
 	if err != nil {
 		return nil, err
@@ -241,19 +241,6 @@ func loadConfig() (*config, error) {
 	return &cfg, nil
 }
 
-// LoadConfig returns the merged config. For callers that cannot return an
-// error it prints the problem and returns an empty config rather than a
-// partial one with a layer silently missing.
-func LoadConfig() *config {
-	cfg, err := loadConfig()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return &config{}
-	}
-
-	return cfg
-}
-
 func SetDomain(domain *Domain) error {
 	v, err := loadWriteTarget()
 	if err != nil {
@@ -266,10 +253,6 @@ func SetDomain(domain *Domain) error {
 	return v.WriteConfig()
 }
 
-// SetDomainHeader sets a single header/metadata key on an existing domain
-// without changing which domain is active - unlike SetDomain, which always
-// makes the saved domain the active one. Only the headers are written, and
-// only to WritePath, so the domain may be defined in an earlier config file.
 func SetDomainHeader(name, key, value string) error {
 	if _, err := LoadDomain(name); err != nil {
 		return err
@@ -327,8 +310,15 @@ func RemoveDomain(nameToRemove string) error {
 	return nil
 }
 
+// GetDomainNames is used for shell completion and best-effort iteration
+// (e.g. `apix auth --all`), neither of which has anywhere useful to surface
+// an error, so a missing/unreadable config is treated the same as no domains.
 func GetDomainNames() []string {
-	cfg := LoadConfig()
+	cfg, err := LoadConfig()
+	if err != nil {
+		return nil
+	}
+
 	domainNames := make([]string, 0, len(cfg.Domains))
 	for k := range cfg.Domains {
 		domainNames = append(domainNames, k)

@@ -32,8 +32,8 @@ func TestStatusHandler_PrintsOnlyActiveDomainName_ByDefault(t *testing.T) {
 		}
 	})
 
-	if strings.TrimSpace(output) != "my-api" {
-		t.Errorf("expected output to be just the active domain name, got:\n%s", output)
+	if strings.TrimSpace(output) != "Active domain: my-api" {
+		t.Errorf("expected output to be the active domain name, got:\n%s", output)
 	}
 }
 

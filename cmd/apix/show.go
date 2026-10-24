@@ -30,7 +30,10 @@ method instead.`,
 		Args:         cobra.MaximumNArgs(1),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			activeDomain := config.GetActiveDomain()
+			activeDomain, err := config.RequireActiveDomain()
+			if err != nil {
+				return err
+			}
 
 			if len(args) == 0 {
 				if activeDomain.IsGRPC() {
@@ -45,7 +48,10 @@ method instead.`,
 			return nil
 		},
 		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			activeDomain := config.GetActiveDomain()
+			activeDomain, err := config.RequireActiveDomain()
+			if err != nil {
+				return nil, cobra.ShellCompDirectiveNoFileComp
+			}
 
 			if activeDomain.IsGRPC() {
 				conn, err := grpcclient.Dial(activeDomain)

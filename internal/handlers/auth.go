@@ -30,7 +30,10 @@ func AuthHandler(cmd *cobra.Command, args []string) error {
 			return err
 		}
 	} else {
-		domain = config.GetActiveDomain()
+		domain, err = config.RequireActiveDomain()
+		if err != nil {
+			return err
+		}
 	}
 
 	return runAuth(domain)

@@ -12,7 +12,7 @@ func SwitchHandler(cmd *cobra.Command, args []string) {
 
 	err := config.SetActiveName(newActiveDomain)
 	if err != nil {
-		fmt.Printf("%s", err)
+		fmt.Println(err)
 		return
 	}
 

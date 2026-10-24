@@ -8,7 +8,10 @@ import (
 )
 
 func StatusHandler(cmd *cobra.Command, args []string) error {
-	cfg := config.LoadConfig()
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		return err
+	}
 
 	if cfg.Active == "" {
 		return fmt.Errorf("no active domain set. Use `apix switch` to set one, or `apix new` to create one")

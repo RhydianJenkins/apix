@@ -10,7 +10,11 @@ import (
 
 func ShowHandler(cmd *cobra.Command, args []string) {
 	target := args[0]
-	domain := config.GetActiveDomain()
+	domain, err := config.RequireActiveDomain()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	if domain.IsGRPC() {
 		headers, _ := cmd.Flags().GetStringSlice("header")
@@ -18,7 +22,7 @@ func ShowHandler(cmd *cobra.Command, args []string) {
 
 		summary, err := GRPCShowHandler(domain, target, headerMap)
 		if err != nil {
-			fmt.Printf("%s\n", err)
+			fmt.Println(err)
 			return
 		}
 
@@ -34,7 +38,7 @@ func ShowHandler(cmd *cobra.Command, args []string) {
 	pathItem, err := oas.GetPathItem(target, domain.HTTP.OpenAPISpecPath)
 
 	if err != nil {
-		fmt.Printf("%s", err)
+		fmt.Println(err)
 		return
 	}
 

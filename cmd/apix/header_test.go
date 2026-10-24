@@ -18,7 +18,11 @@ func TestSetHeaderCommand_DomainFlag(t *testing.T) {
 		t.Fatalf("expected Execute() to return nil, got: %v", err)
 	}
 
-	if got := config.LoadConfig().Active; got != "a" {
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got := cfg.Active; got != "a" {
 		t.Errorf("expected active domain to remain %q, got %q", "a", got)
 	}
 
