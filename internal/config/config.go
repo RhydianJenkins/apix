@@ -209,6 +209,22 @@ func GetActiveDomain() *Domain {
 	return &domain
 }
 
+func RequireActiveDomain() (*Domain, error) {
+	cfg := LoadConfig()
+	if len(cfg.Domains) == 0 {
+		return nil, fmt.Errorf("no domains configured. Run `apix new <name> <base>` to create one or see `apix --help` for configuration options")
+	}
+	if cfg.Active == "" {
+		return nil, fmt.Errorf("no active domain set. Run `apix switch <name>` to set one or `apix list` to see available domains")
+	}
+	if _, ok := cfg.Domains[cfg.Active]; !ok {
+		return nil, fmt.Errorf("active domain %q does not exist. Run `apix switch <name>` to set a valid active domain or `apix list` to see available domains", cfg.Active)
+	}
+	domain := cfg.Domains[cfg.Active]
+	domain.Name = cfg.Active
+	return &domain, nil
+}
+
 func LoadDomain(name string) (*Domain, error) {
 	cfg, err := loadConfig()
 	if err != nil {

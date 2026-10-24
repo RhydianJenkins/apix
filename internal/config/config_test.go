@@ -559,3 +559,36 @@ func TestLoadConfig_UnparsableLayer_ReturnsEmptyConfig(t *testing.T) {
 		t.Errorf("expected an empty config rather than a partial one, got %+v", cfg)
 	}
 }
+
+func TestRequireActiveDomain(t *testing.T) {
+	tempDir := t.TempDir()
+	CfgPaths = []string{filepath.Join(tempDir, ".apix.yaml")}
+	viper.Reset()
+
+	if _, err := RequireActiveDomain(); err == nil || !strings.Contains(err.Error(), "no domains configured") {
+		t.Fatalf("expected no domains configured error, got: %v", err)
+	}
+
+	if err := os.WriteFile(CfgPaths[0], []byte("domains:\n  a:\n    base: https://a.example.com\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := RequireActiveDomain(); err == nil || !strings.Contains(err.Error(), "no active domain") {
+		t.Fatalf("expected no active domain error, got: %v", err)
+	}
+
+	if err := os.WriteFile(CfgPaths[0], []byte("active: missing\ndomains:\n  a:\n    base: https://a.example.com\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := RequireActiveDomain(); err == nil || !strings.Contains(err.Error(), "does not exist") {
+		t.Fatalf("expected active domain does not exist error, got: %v", err)
+	}
+
+	SetDomain(&Domain{Name: "a", Base: "https://a.example.com"})
+	d, err := RequireActiveDomain()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if d.Name != "a" || d.Base != "https://a.example.com" {
+		t.Fatalf("expected domain a with base https://a.example.com, got %+v", d)
+	}
+}
