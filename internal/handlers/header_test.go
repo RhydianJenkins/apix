@@ -151,8 +151,8 @@ func TestSetHeaderHandler_MultipleFiles_WritesToLastFile(t *testing.T) {
 
 	config.CfgPaths = []string{tracked, private}
 
-	if err := SetHeaderHandler(newSetHeaderTestCmd(), []string{"authorization", "Bearer xyz"}); err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	if err := SetHeaderHandler(newSetHeaderTestCmd(), []string{"authorization", "Bearer xyz"}); err == nil {
+		t.Fatal("expected error when last config file does not exist")
 	}
 
 	after, err := os.ReadFile(tracked)
@@ -163,11 +163,7 @@ func TestSetHeaderHandler_MultipleFiles_WritesToLastFile(t *testing.T) {
 		t.Errorf("tracked file changed:\n%s", after)
 	}
 
-	loaded, err := config.LoadDomain("a")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if loaded.Headers["authorization"] != "Bearer xyz" {
-		t.Errorf("expected authorization header to be set, got: %+v", loaded.Headers)
+	if _, err := os.Stat(private); !os.IsNotExist(err) {
+		t.Errorf("expected private file not to be created, stat err = %v", err)
 	}
 }

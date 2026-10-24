@@ -9,9 +9,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-// ExpandPath expands a leading "~" to the user's home directory. Shells don't
-// always do this themselves (e.g. after a ":" in a path list), so it is applied
-// to -c values and $APIX_CONFIG entries alike.
 func ExpandPath(path string) (string, error) {
 	if path != "~" && !strings.HasPrefix(path, "~/") {
 		return path, nil
@@ -29,14 +26,9 @@ func ExpandPath(path string) (string, error) {
 	return filepath.Join(home, strings.TrimPrefix(path, "~/")), nil
 }
 
-// defaultCfgPaths returns the config files to use when no -c flag is given:
-// $APIX_CONFIG (an OS path list, so a single path works as before) or
-// ~/.apix.yaml.
 func defaultCfgPaths() []string {
 	var paths []string
 
-	// SplitList keeps empty entries (e.g. from a trailing ":"), which would
-	// otherwise leave WritePath() empty.
 	for _, p := range filepath.SplitList(os.Getenv("APIX_CONFIG")) {
 		if p == "" {
 			continue
@@ -56,11 +48,8 @@ func defaultCfgPaths() []string {
 	return paths
 }
 
-// CfgPaths are the config files, in merge order: later files deep-merge over
-// earlier ones. Only the last one is ever written to, see WritePath.
 var CfgPaths = defaultCfgPaths()
 
-// WritePath is the config file that receives all writes (the last of CfgPaths).
 func WritePath() string {
 	return CfgPaths[len(CfgPaths)-1]
 }
@@ -116,7 +105,6 @@ type config struct {
 	Domains map[string]Domain `mapstructure:"domains"`
 }
 
-// createEmptyConfig creates path without touching any other config's content.
 func createEmptyConfig(path string) error {
 	v := viper.New()
 	v.SetConfigType("yaml")
@@ -124,10 +112,6 @@ func createEmptyConfig(path string) error {
 	return v.SafeWriteConfigAs(path)
 }
 
-// loadMerged reads every file in CfgPaths and deep-merges them, later files
-// overriding earlier ones. A missing file is skipped, except the write target
-// which is created. Any other read or parse error is returned, so that a broken
-// layer is never silently dropped from the merged config.
 func loadMerged() (*viper.Viper, error) {
 	v := viper.New()
 	v.SetConfigType("yaml")
@@ -142,9 +126,7 @@ func loadMerged() (*viper.Viper, error) {
 
 		if _, statErr := os.Stat(path); os.IsNotExist(statErr) {
 			if path == WritePath() {
-				if createErr := createEmptyConfig(path); createErr != nil {
-					fmt.Println("Error creating config file:", createErr)
-				}
+				return nil, fmt.Errorf("config file %s does not exist", path)
 			}
 			continue
 		}
@@ -155,8 +137,6 @@ func loadMerged() (*viper.Viper, error) {
 	return v, nil
 }
 
-// loadWriteTarget reads only WritePath, so that values merged in from earlier
-// files are never persisted into it.
 func loadWriteTarget() (*viper.Viper, error) {
 	path := WritePath()
 
@@ -257,9 +237,6 @@ func loadConfig() (*config, error) {
 	return &cfg, nil
 }
 
-// LoadConfig returns the merged config. For callers that cannot return an
-// error it prints the problem and returns an empty config rather than a
-// partial one with a layer silently missing.
 func LoadConfig() *config {
 	cfg, err := loadConfig()
 	if err != nil {
@@ -282,10 +259,6 @@ func SetDomain(domain *Domain) error {
 	return v.WriteConfig()
 }
 
-// SetDomainHeader sets a single header/metadata key on an existing domain
-// without changing which domain is active - unlike SetDomain, which always
-// makes the saved domain the active one. Only the headers are written, and
-// only to WritePath, so the domain may be defined in an earlier config file.
 func SetDomainHeader(name, key, value string) error {
 	if _, err := LoadDomain(name); err != nil {
 		return err

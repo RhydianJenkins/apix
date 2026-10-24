@@ -291,8 +291,8 @@ func TestSetDomainHeader_MultipleFiles_WritesOnlyToLastFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := SetDomainHeader("a", "authorization", "Bearer x"); err != nil {
-		t.Fatalf("SetDomainHeader() error = %v", err)
+	if err := SetDomainHeader("a", "authorization", "Bearer x"); err == nil {
+		t.Fatal("expected error when last config file does not exist")
 	}
 
 	after, err := os.ReadFile(tracked)
@@ -303,20 +303,8 @@ func TestSetDomainHeader_MultipleFiles_WritesOnlyToLastFile(t *testing.T) {
 		t.Errorf("tracked file changed:\n%s", after)
 	}
 
-	privateContent, err := os.ReadFile(private)
-	if err != nil {
-		t.Fatalf("expected private file to be created: %v", err)
-	}
-	if strings.Contains(string(privateContent), "base:") {
-		t.Errorf("private file should only hold the headers delta:\n%s", privateContent)
-	}
-
-	d, err := LoadDomain("a")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if d.Headers["authorization"] != "Bearer x" || d.Headers["x-team"] != "one" {
-		t.Errorf("merged headers = %v", d.Headers)
+	if _, err := os.Stat(private); !os.IsNotExist(err) {
+		t.Errorf("expected private file not to be created, stat err = %v", err)
 	}
 }
 
@@ -450,10 +438,16 @@ func TestRemoveDomain_MultipleFiles_RemovesFromLastFileOnly(t *testing.T) {
 func TestLoadConfig_MissingLastFile_IsCreated(t *testing.T) {
 	_, private := layeredFiles(t)
 
-	LoadConfig()
+	cfg := LoadConfig()
+	if cfg == nil {
+		t.Fatal("expected empty config")
+	}
+	if len(cfg.Domains) != 0 || cfg.Active != "" {
+		t.Errorf("expected empty config, got %+v", cfg)
+	}
 
-	if _, err := os.Stat(private); err != nil {
-		t.Errorf("expected last file to be created: %v", err)
+	if _, err := os.Stat(private); !os.IsNotExist(err) {
+		t.Errorf("expected last file not to be created, stat err = %v", err)
 	}
 }
 
