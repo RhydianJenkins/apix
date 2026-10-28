@@ -127,6 +127,16 @@ func newRootCmd(version string) *cobra.Command {
 	}
 	rootCmd.AddCommand(removeCmd)
 
+	statusCmd := &cobra.Command{
+		Use:          "status",
+		Short:        "Show information about the currently active domain",
+		Args:         cobra.ExactArgs(0),
+		SilenceUsage: true,
+		RunE:         handlers.StatusHandler,
+	}
+	statusCmd.Flags().BoolP("verbose", "v", false, "Also show all information about the domain")
+	rootCmd.AddCommand(statusCmd)
+
 	versionCmd := &cobra.Command{
 		Use:   "version",
 		Short: "Print version information",

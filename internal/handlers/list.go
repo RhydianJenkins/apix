@@ -21,34 +21,37 @@ func ListHandler(cmd *cobra.Command, args []string) {
 
 		if verbose {
 			domain := cfg.Domains[name]
+			printDomainDetails(&domain)
+		}
+	}
+}
 
-			fmt.Printf("\tBase: %s\n", domain.Base)
-			fmt.Printf("\tProtocol: %s\n", domain.Protocol())
+func printDomainDetails(domain *config.Domain) {
+	fmt.Printf("\tBase: %s\n", domain.Base)
+	fmt.Printf("\tProtocol: %s\n", domain.Protocol())
 
-			if domain.HTTP != nil {
-				fmt.Printf("\tUser: %s\n", domain.HTTP.User)
-				fmt.Printf("\tPass: %s\n", domain.HTTP.Pass)
-				fmt.Printf("\tOAS: %s\n", domain.HTTP.OpenAPISpecPath)
-				if domain.HTTP.Port != 0 {
-					fmt.Printf("\tPort: %d\n", domain.HTTP.Port)
-				}
-			}
+	if domain.HTTP != nil {
+		fmt.Printf("\tUser: %s\n", domain.HTTP.User)
+		fmt.Printf("\tPass: %s\n", domain.HTTP.Pass)
+		fmt.Printf("\tOAS: %s\n", domain.HTTP.OpenAPISpecPath)
+		if domain.HTTP.Port != 0 {
+			fmt.Printf("\tPort: %d\n", domain.HTTP.Port)
+		}
+	}
 
-			if domain.GRPC != nil {
-				fmt.Printf("\tInsecure: %t\n", domain.GRPC.Insecure)
-				fmt.Printf("\tPort: %d\n", domain.GRPC.Port)
-			}
+	if domain.GRPC != nil {
+		fmt.Printf("\tInsecure: %t\n", domain.GRPC.Insecure)
+		fmt.Printf("\tPort: %d\n", domain.GRPC.Port)
+	}
 
-			if domain.Auth != nil {
-				fmt.Printf("\tAuth command: %s\n", domain.Auth.Command)
-			}
+	if domain.Auth != nil {
+		fmt.Printf("\tAuth command: %s\n", domain.Auth.Command)
+	}
 
-			if len(domain.Headers) > 0 {
-				fmt.Printf("\tHeaders:\n")
-				for k, v := range domain.Headers {
-					fmt.Printf("\t\t%s: %s\n", k, v)
-				}
-			}
+	if len(domain.Headers) > 0 {
+		fmt.Printf("\tHeaders:\n")
+		for k, v := range domain.Headers {
+			fmt.Printf("\t\t%s: %s\n", k, v)
 		}
 	}
 }

@@ -58,6 +58,7 @@ Available Commands:
   remove      Remove a domain from the config
   set-header  Set a header/metadata value on a domain, without changing the active domain
   show        List the endpoints or gRPC methods on the active domain, or show a summary of one
+  status      Show information about the currently active domain
   switch      Sets the active domain to the specified name
   version     Print version information
 
