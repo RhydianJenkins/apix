@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.3.0](https://github.com/RhydianJenkins/apix/compare/v3.2.0...v3.3.0) (2026-10-28)
+
+
+### Features
+
+* add status command ([772389a](https://github.com/RhydianJenkins/apix/commit/772389a0e5a0e23ac4c410c6972198306d7a0074))
+* improve error handling with more informative errors ([b2faf8c](https://github.com/RhydianJenkins/apix/commit/b2faf8c237908f928c0828db87b84e7594becbfc))
+
 ## [3.2.0](https://github.com/RhydianJenkins/apix/compare/v3.1.2...v3.2.0) (2026-10-22)
 
 
