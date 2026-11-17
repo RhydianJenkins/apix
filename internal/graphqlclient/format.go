@@ -5,9 +5,6 @@ import (
 	"strings"
 )
 
-// FormatOperationSummary renders a human-readable summary of a single
-// GraphQL operation (a Query/Mutation/Subscription field), without invoking
-// it.
 func FormatOperationSummary(info *OperationInfo) string {
 	var b strings.Builder
 
@@ -28,19 +25,35 @@ func FormatOperationSummary(info *OperationInfo) string {
 	if len(info.Args) > 0 {
 		fmt.Fprintf(&b, "\tArgs:\n")
 		for _, arg := range info.Args {
-			fmt.Fprintf(&b, "\t\t%s\n", formatArg(arg))
+			formatArg(&b, arg, "\t\t")
 		}
 	}
 
 	return b.String()
 }
 
-func formatArg(arg ArgInfo) string {
+func formatArg(b *strings.Builder, arg ArgInfo, indent string) {
 	summary := fmt.Sprintf("%s: %s", arg.Name, arg.Type)
 
 	if arg.Description != "" {
 		summary += " - " + arg.Description
 	}
 
-	return summary
+	fmt.Fprintf(b, "%s%s\n", indent, summary)
+
+	if arg.IsRecursiveRef {
+		fmt.Fprintf(b, "%s\t... (recursive reference to %s, see above)\n", indent, arg.Type)
+		return
+	}
+
+	if len(arg.EnumValues) > 0 {
+		fmt.Fprintf(b, "%s\tvalues: %s\n", indent, strings.Join(arg.EnumValues, ", "))
+	}
+
+	if len(arg.InputFields) > 0 {
+		fmt.Fprintf(b, "%s\tFields:\n", indent)
+		for _, field := range arg.InputFields {
+			formatArg(b, field, indent+"\t\t")
+		}
+	}
 }

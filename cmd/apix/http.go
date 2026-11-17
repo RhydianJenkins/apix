@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/rhydianjenkins/apix/v3/internal/config"
+	"github.com/rhydianjenkins/apix/v3/internal/graphqlclient"
 	"github.com/rhydianjenkins/apix/v3/internal/handlers"
 	"github.com/rhydianjenkins/apix/v3/internal/oas"
 	"github.com/spf13/cobra"
@@ -26,10 +27,13 @@ func registerHTTPCommands(rootCmd *cobra.Command) {
 }
 
 func createHTTPCommand(method string) *cobra.Command {
+	// GraphQL invocation only applies to POST - the only verb GraphQL servers use.
+	isPost := method == "POST"
+
 	cmd := &cobra.Command{
 		Use:          fmt.Sprintf("%s [path]", strings.ToLower(method)),
 		Short:        fmt.Sprintf("Send a %s request to the active domain", method),
-		Example:      fmt.Sprintf("apix %s /users/123\ncat req_body.json | apix %s /users/123", strings.ToLower(method), strings.ToLower(method)),
+		Example:      httpCommandExample(method, isPost),
 		Args:         cobra.RangeArgs(1, 2),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -46,13 +50,16 @@ func createHTTPCommand(method string) *cobra.Command {
 			headers, _ := cmd.Flags().GetStringSlice("header")
 			headerMap := handlers.ParseHeaders(headers)
 
-			body, err := handlers.HTTPHandler(
-				method,
-				activeDomain,
-				args[0],
-				input,
-				headerMap,
-			)
+			path := args[0]
+
+			var body []byte
+
+			if isPost && activeDomain.IsGraphQL() && path != "" && path != "/" {
+				fields, _ := cmd.Flags().GetStringSlice("fields")
+				body, err = handlers.GraphQLPostHandler(activeDomain, path, fields, input, headerMap)
+			} else {
+				body, err = handlers.HTTPHandler(method, activeDomain, path, input, headerMap)
+			}
 
 			fmt.Printf("%s", string(body))
 
@@ -66,6 +73,20 @@ func createHTTPCommand(method string) *cobra.Command {
 			activeDomain, err := config.RequireActiveDomain()
 			if err != nil {
 				return nil, cobra.ShellCompDirectiveNoFileComp
+			}
+
+			if isPost && activeDomain.IsGraphQL() {
+				infos, err := graphqlclient.ListOperations(activeDomain, activeDomain.Headers)
+				if err != nil {
+					return nil, cobra.ShellCompDirectiveNoFileComp
+				}
+
+				names := make([]string, len(infos))
+				for i, info := range infos {
+					names[i] = info.QualifiedName()
+				}
+
+				return names, cobra.ShellCompDirectiveNoFileComp
 			}
 
 			if !oas.HasValidOpenAPISpec(activeDomain) {
@@ -84,7 +105,23 @@ func createHTTPCommand(method string) *cobra.Command {
 	}
 
 	cmd.Flags().StringSliceP("header", "H", []string{}, "Custom headers in format 'Key: Value' (can be used multiple times)")
+
+	if isPost {
+		cmd.Flags().StringSlice("fields", nil, "extend a GraphQL operation's default field selection with dotted paths into nested fields (e.g. account.energy.properties), relative to its return type; repeatable (GraphQL domains only)")
+	}
+
 	return cmd
+}
+
+func httpCommandExample(method string, isPost bool) string {
+	lower := strings.ToLower(method)
+	example := fmt.Sprintf("apix %s /users/123\ncat req_body.json | apix %s /users/123", lower, lower)
+
+	if isPost {
+		example += "\n\n# on a --graphql domain, post can invoke a discovered operation directly,\n# with stdin as its variables, instead of hand-building a query document:\necho '{\"id\": \"123\"}' | apix post Query.user"
+	}
+
+	return example
 }
 
 func getStdIn() (*[]byte, error) {

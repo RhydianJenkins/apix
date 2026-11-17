@@ -11,9 +11,6 @@ import (
 	"github.com/rhydianjenkins/apix/v3/internal/graphqlclient"
 )
 
-// GraphQLShowHandler resolves a GraphQL operation via introspection and
-// returns a human-readable summary of its arguments and return type, without
-// invoking it.
 func GraphQLShowHandler(domain *config.Domain, name string, headers map[string]string) (string, error) {
 	mergedHeaders := make(map[string]string)
 
