@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,6 +13,55 @@ import (
 	"github.com/rhydianjenkins/apix/v3/internal/config"
 	"github.com/rhydianjenkins/apix/v3/internal/grpctest"
 )
+
+const graphqlTestSchema = `{
+  "data": {
+    "__schema": {
+      "queryType": {"name": "Query"},
+      "mutationType": {"name": "Mutation"},
+      "subscriptionType": null,
+      "types": [
+        {
+          "kind": "OBJECT",
+          "name": "Query",
+          "fields": [
+            {
+              "name": "user",
+              "description": "Fetch a user by ID.",
+              "args": [
+                {"name": "id", "description": "", "type": {"kind": "NON_NULL", "name": null, "ofType": {"kind": "SCALAR", "name": "ID", "ofType": null}}}
+              ],
+              "type": {"kind": "OBJECT", "name": "User", "ofType": null},
+              "isDeprecated": false,
+              "deprecationReason": null
+            }
+          ]
+        },
+        {
+          "kind": "OBJECT",
+          "name": "Mutation",
+          "fields": [
+            {
+              "name": "createUser",
+              "description": "",
+              "args": [],
+              "type": {"kind": "OBJECT", "name": "User", "ofType": null},
+              "isDeprecated": false,
+              "deprecationReason": null
+            }
+          ]
+        }
+      ]
+    }
+  }
+}`
+
+func graphqlTestHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(graphqlTestSchema))
+	}
+}
 
 func captureStdout(t *testing.T, fn func()) string {
 	t.Helper()
@@ -174,6 +225,60 @@ func TestShowCommand_GRPCDialFailureReturnsError(t *testing.T) {
 
 	if err := cmd.Execute(); err == nil {
 		t.Fatal("expected Execute() to return an error when reflection is unreachable, got nil")
+	}
+}
+
+func TestShowCommand_GraphQLListsOperations(t *testing.T) {
+	server := httptest.NewServer(graphqlTestHandler())
+	defer server.Close()
+
+	setActiveDomain(t, &config.Domain{
+		Name: "testgql",
+		Base: server.URL,
+		HTTP: &config.HTTPOptions{GraphQL: true},
+	})
+
+	cmd := newRootCmd("test")
+	cmd.SetArgs([]string{"show"})
+
+	output := captureStdout(t, func() {
+		if err := cmd.Execute(); err != nil {
+			t.Fatalf("expected Execute() to return nil, got: %v", err)
+		}
+	})
+
+	for _, want := range []string{"Query.user(id: ID!) -> User", "Mutation.createUser() -> User"} {
+		if !strings.Contains(output, want) {
+			t.Errorf("expected output to contain %q, got:\n%s", want, output)
+		}
+	}
+}
+
+func TestShowCommand_GraphQLShowsSingleOperation(t *testing.T) {
+	server := httptest.NewServer(graphqlTestHandler())
+	defer server.Close()
+
+	setActiveDomain(t, &config.Domain{
+		Name: "testgql",
+		Base: server.URL,
+		HTTP: &config.HTTPOptions{GraphQL: true},
+	})
+
+	cmd := newRootCmd("test")
+	cmd.SetArgs([]string{"show", "Query.user"})
+
+	output := captureStdout(t, func() {
+		if err := cmd.Execute(); err != nil {
+			t.Fatalf("expected Execute() to return nil, got: %v", err)
+		}
+	})
+
+	if !strings.Contains(output, "Query.user(id: ID!) -> User") {
+		t.Errorf("expected output to contain the operation summary, got:\n%s", output)
+	}
+
+	if !strings.Contains(output, "Description: Fetch a user by ID.") {
+		t.Errorf("expected output to contain the description, got:\n%s", output)
 	}
 }
 

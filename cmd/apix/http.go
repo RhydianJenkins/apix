@@ -16,6 +16,7 @@ func addHTTPNewFlags(cmd *cobra.Command) {
 	cmd.Flags().String("user", "", "basic auth username to use for this domain (http only)")
 	cmd.Flags().String("pass", "", "basic auth password to use for this domain (http only)")
 	cmd.Flags().String("oas", "", "path to the oas spec for this endpoint (http only)")
+	cmd.Flags().Bool("graphql", false, "treat this domain as GraphQL: discover operations for `apix show` via introspection instead of an OAS spec (http only)")
 }
 
 func registerHTTPCommands(rootCmd *cobra.Command) {

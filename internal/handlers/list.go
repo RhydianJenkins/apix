@@ -40,6 +40,9 @@ func printDomainDetails(domain *config.Domain) {
 		fmt.Printf("\tUser: %s\n", domain.HTTP.User)
 		fmt.Printf("\tPass: %s\n", domain.HTTP.Pass)
 		fmt.Printf("\tOAS: %s\n", domain.HTTP.OpenAPISpecPath)
+		if domain.HTTP.GraphQL {
+			fmt.Printf("\tGraphQL: true\n")
+		}
 		if domain.HTTP.Port != 0 {
 			fmt.Printf("\tPort: %d\n", domain.HTTP.Port)
 		}
