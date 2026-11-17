@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 
@@ -201,6 +202,173 @@ func TestIntrospect_NonSuccessStatusReturnsStatusError(t *testing.T) {
 
 	if statusErr.StatusCode != http.StatusUnauthorized {
 		t.Errorf("expected status 401, got %d", statusErr.StatusCode)
+	}
+}
+
+const expandedArgsSchemaResponse = `{
+  "data": {
+    "__schema": {
+      "queryType": {"name": "Query"},
+      "mutationType": null,
+      "subscriptionType": null,
+      "types": [
+        {
+          "kind": "OBJECT",
+          "name": "Query",
+          "fields": [
+            {
+              "name": "account",
+              "description": "",
+              "args": [
+                {"name": "identifier", "description": "", "type": {"kind": "NON_NULL", "name": null, "ofType": {"kind": "INPUT_OBJECT", "name": "AccountIdentifier", "ofType": null}}},
+                {"name": "state", "description": "", "type": {"kind": "ENUM", "name": "AccountState", "ofType": null}},
+                {"name": "self", "description": "", "type": {"kind": "INPUT_OBJECT", "name": "SelfRefInput", "ofType": null}}
+              ],
+              "type": {"kind": "OBJECT", "name": "Account", "ofType": null},
+              "isDeprecated": false,
+              "deprecationReason": null
+            }
+          ],
+          "inputFields": null,
+          "enumValues": null
+        },
+        {
+          "kind": "INPUT_OBJECT",
+          "name": "AccountIdentifier",
+          "fields": null,
+          "inputFields": [
+            {"name": "id", "description": "Account UUID.", "type": {"kind": "SCALAR", "name": "String", "ofType": null}},
+            {"name": "number", "description": "", "type": {"kind": "SCALAR", "name": "String", "ofType": null}}
+          ],
+          "enumValues": null
+        },
+        {
+          "kind": "ENUM",
+          "name": "AccountState",
+          "fields": null,
+          "inputFields": null,
+          "enumValues": [
+            {"name": "ACTIVE", "description": "", "isDeprecated": false, "deprecationReason": null},
+            {"name": "CLOSED", "description": "", "isDeprecated": false, "deprecationReason": null}
+          ]
+        },
+        {
+          "kind": "INPUT_OBJECT",
+          "name": "SelfRefInput",
+          "fields": null,
+          "inputFields": [
+            {"name": "value", "description": "", "type": {"kind": "SCALAR", "name": "String", "ofType": null}},
+            {"name": "nested", "description": "", "type": {"kind": "INPUT_OBJECT", "name": "SelfRefInput", "ofType": null}}
+          ],
+          "enumValues": null
+        }
+      ]
+    }
+  }
+}`
+
+func TestResolveOperation_ExpandsInputObjectArgs(t *testing.T) {
+	domain := newTestDomain(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(expandedArgsSchemaResponse))
+	})
+
+	info, err := graphqlclient.ResolveOperation(domain, "account", nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var identifier *graphqlclient.ArgInfo
+	for i := range info.Args {
+		if info.Args[i].Name == "identifier" {
+			identifier = &info.Args[i]
+		}
+	}
+
+	if identifier == nil {
+		t.Fatalf("expected an 'identifier' arg, got %+v", info.Args)
+	}
+
+	if len(identifier.InputFields) != 2 {
+		t.Fatalf("expected 2 input fields, got %d: %+v", len(identifier.InputFields), identifier.InputFields)
+	}
+
+	if identifier.InputFields[0].Name != "id" || identifier.InputFields[0].Description != "Account UUID." {
+		t.Errorf("expected the id field with its description, got %+v", identifier.InputFields[0])
+	}
+
+	if identifier.InputFields[1].Name != "number" {
+		t.Errorf("expected the number field, got %+v", identifier.InputFields[1])
+	}
+}
+
+func TestResolveOperation_ExpandsEnumArgValues(t *testing.T) {
+	domain := newTestDomain(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(expandedArgsSchemaResponse))
+	})
+
+	info, err := graphqlclient.ResolveOperation(domain, "account", nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var state *graphqlclient.ArgInfo
+	for i := range info.Args {
+		if info.Args[i].Name == "state" {
+			state = &info.Args[i]
+		}
+	}
+
+	if state == nil {
+		t.Fatalf("expected a 'state' arg, got %+v", info.Args)
+	}
+
+	want := []string{"ACTIVE", "CLOSED"}
+	if !slices.Equal(state.EnumValues, want) {
+		t.Errorf("expected enum values %v, got %v", want, state.EnumValues)
+	}
+}
+
+func TestResolveOperation_GuardsAgainstSelfReferencingInput(t *testing.T) {
+	domain := newTestDomain(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(expandedArgsSchemaResponse))
+	})
+
+	info, err := graphqlclient.ResolveOperation(domain, "account", nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var self *graphqlclient.ArgInfo
+	for i := range info.Args {
+		if info.Args[i].Name == "self" {
+			self = &info.Args[i]
+		}
+	}
+
+	if self == nil {
+		t.Fatalf("expected a 'self' arg, got %+v", info.Args)
+	}
+
+	var nested *graphqlclient.ArgInfo
+	for i := range self.InputFields {
+		if self.InputFields[i].Name == "nested" {
+			nested = &self.InputFields[i]
+		}
+	}
+
+	if nested == nil {
+		t.Fatalf("expected a 'nested' field, got %+v", self.InputFields)
+	}
+
+	if !nested.IsRecursiveRef {
+		t.Errorf("expected the self-referencing field to be flagged recursive, got %+v", nested)
+	}
+
+	if len(nested.InputFields) != 0 {
+		t.Errorf("expected recursion to stop instead of expanding forever, got %+v", nested.InputFields)
 	}
 }
 

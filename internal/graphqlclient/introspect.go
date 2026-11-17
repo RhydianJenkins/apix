@@ -1,6 +1,5 @@
-// Package graphqlclient discovers operations on a GraphQL domain via the
-// standard introspection query, the GraphQL analogue of OAS specs (HTTP) and
-// server reflection (gRPC) elsewhere in apix.
+// Package graphqlclient discovers GraphQL operations via introspection, the
+// GraphQL analogue of OAS specs and gRPC reflection elsewhere in apix.
 package graphqlclient
 
 import (
@@ -15,11 +14,8 @@ import (
 	"github.com/rhydianjenkins/apix/v3/internal/httpclient"
 )
 
-// introspectionQuery is the standard GraphQL introspection query, trimmed to
-// only what apix needs to describe Query/Mutation/Subscription fields: their
-// arguments and return types. The TypeRef fragment unwraps up to four levels
-// of LIST/NON_NULL wrapping (e.g. "[[String!]!]!"), which covers real-world
-// schemas without the depth (and weight) of a full introspection dump.
+// TypeRef only unwraps 4 levels of LIST/NON_NULL (e.g. "[[String!]!]!"),
+// enough for real-world schemas without a full introspection dump's weight.
 const introspectionQuery = `query IntrospectionQuery {
   __schema {
     queryType { name }
@@ -37,6 +33,17 @@ const introspectionQuery = `query IntrospectionQuery {
           type { ...TypeRef }
         }
         type { ...TypeRef }
+        isDeprecated
+        deprecationReason
+      }
+      inputFields {
+        name
+        description
+        type { ...TypeRef }
+      }
+      enumValues(includeDeprecated: true) {
+        name
+        description
         isDeprecated
         deprecationReason
       }
@@ -65,9 +72,8 @@ fragment TypeRef on __Type {
   }
 }`
 
-// StatusError is returned by Introspect when the GraphQL endpoint responds
-// with a non-2xx HTTP status, so callers can special-case things like 401s
-// the same way the HTTP and gRPC handlers do.
+// StatusError marks a non-2xx introspection response, so callers can
+// special-case e.g. 401s like the HTTP and gRPC handlers do.
 type StatusError struct {
 	StatusCode int
 }
@@ -82,7 +88,6 @@ type typeRef struct {
 	OfType *typeRef `json:"ofType"`
 }
 
-// String renders a typeRef as GraphQL SDL, e.g. "[String!]!".
 func (t *typeRef) String() string {
 	if t == nil {
 		return "Unknown"
@@ -113,9 +118,19 @@ type schemaField struct {
 	DeprecationReason string       `json:"deprecationReason"`
 }
 
+type enumValueDef struct {
+	Name              string `json:"name"`
+	Description       string `json:"description"`
+	IsDeprecated      bool   `json:"isDeprecated"`
+	DeprecationReason string `json:"deprecationReason"`
+}
+
 type fullType struct {
-	Name   string        `json:"name"`
-	Fields []schemaField `json:"fields"`
+	Kind        string         `json:"kind"`
+	Name        string         `json:"name"`
+	Fields      []schemaField  `json:"fields"`
+	InputFields []inputValue   `json:"inputFields"`
+	EnumValues  []enumValueDef `json:"enumValues"`
 }
 
 type namedType struct {
@@ -138,15 +153,17 @@ type introspectionResponse struct {
 	} `json:"errors"`
 }
 
-// ArgInfo describes one argument accepted by a GraphQL operation.
 type ArgInfo struct {
 	Name        string
 	Type        string
 	Description string
+
+	InputFields []ArgInfo // set if this arg's type is an input object
+	EnumValues  []string  // set if this arg's type is an enum
+
+	IsRecursiveRef bool // set instead of expanding InputFields into a cycle
 }
 
-// OperationInfo describes a single field on the Query, Mutation, or
-// Subscription root type, resolved via introspection.
 type OperationInfo struct {
 	Kind              string // "Query", "Mutation", or "Subscription"
 	Name              string
@@ -157,12 +174,11 @@ type OperationInfo struct {
 	DeprecationReason string
 }
 
-// QualifiedName identifies an operation unambiguously, e.g. "Query.user".
 func (o OperationInfo) QualifiedName() string {
 	return o.Kind + "." + o.Name
 }
 
-// Signature renders a short one-line summary, e.g. "Query.user(id: ID!) -> User".
+// Signature renders e.g. "Query.user(id: ID!) -> User".
 func (o OperationInfo) Signature() string {
 	args := make([]string, len(o.Args))
 	for i, a := range o.Args {
@@ -172,8 +188,6 @@ func (o OperationInfo) Signature() string {
 	return fmt.Sprintf("%s(%s) -> %s", o.QualifiedName(), strings.Join(args, ", "), o.ReturnType)
 }
 
-// Introspect queries a GraphQL domain for its schema via the standard
-// introspection query.
 func Introspect(domain *config.Domain, headers map[string]string) (*schema, error) {
 	body, err := json.Marshal(map[string]string{"query": introspectionQuery})
 	if err != nil {
@@ -211,9 +225,8 @@ func Introspect(domain *config.Domain, headers map[string]string) (*schema, erro
 	return &parsed.Data.Schema, nil
 }
 
-// ListOperations returns every Query, Mutation, and Subscription field found
-// via introspection, grouped in that order and sorted by name within each
-// group.
+// ListOperations groups Query, Mutation, then Subscription fields, sorted by
+// name within each group.
 func ListOperations(domain *config.Domain, headers map[string]string) ([]OperationInfo, error) {
 	s, err := Introspect(domain, headers)
 	if err != nil {
@@ -227,7 +240,7 @@ func ListOperations(domain *config.Domain, headers map[string]string) ([]Operati
 
 		ops := make([]OperationInfo, 0, len(fields))
 		for _, f := range fields {
-			ops = append(ops, toOperationInfo(root.kind, f))
+			ops = append(ops, toOperationInfo(s, root.kind, f))
 		}
 
 		sort.Slice(ops, func(i, j int) bool { return ops[i].Name < ops[j].Name })
@@ -237,29 +250,46 @@ func ListOperations(domain *config.Domain, headers map[string]string) ([]Operati
 	return infos, nil
 }
 
-// ResolveOperation finds a single named operation, either bare (e.g. "user")
-// or qualified by root type (e.g. "Query.user"), analogous to
-// grpcclient.ResolveMethod.
+// ResolveOperation accepts a bare name (e.g. "user") or one qualified by
+// root type (e.g. "Query.user"), analogous to grpcclient.ResolveMethod.
 func ResolveOperation(domain *config.Domain, name string, headers map[string]string) (*OperationInfo, error) {
-	infos, err := ListOperations(domain, headers)
+	s, err := Introspect(domain, headers)
 	if err != nil {
 		return nil, err
 	}
 
+	match, err := resolveField(s, name)
+	if err != nil {
+		return nil, err
+	}
+
+	info := toOperationInfo(s, match.rootKind, match.field)
+
+	return &info, nil
+}
+
+type fieldMatch struct {
+	rootKind string
+	field    schemaField
+}
+
+func resolveField(s *schema, name string) (*fieldMatch, error) {
 	qualifiedKind, bareName, isQualified := splitQualified(name)
 
-	var candidates []OperationInfo
+	var candidates []fieldMatch
 
-	for _, info := range infos {
-		if isQualified {
-			if info.Kind == qualifiedKind && info.Name == bareName {
-				candidates = append(candidates, info)
+	for _, root := range rootKinds(s) {
+		for _, f := range findFields(s, root.typeName) {
+			if isQualified {
+				if root.kind == qualifiedKind && f.Name == bareName {
+					candidates = append(candidates, fieldMatch{root.kind, f})
+				}
+				continue
 			}
-			continue
-		}
 
-		if info.Name == name {
-			candidates = append(candidates, info)
+			if f.Name == name {
+				candidates = append(candidates, fieldMatch{root.kind, f})
+			}
 		}
 	}
 
@@ -270,7 +300,7 @@ func ResolveOperation(domain *config.Domain, name string, headers map[string]str
 	if len(candidates) > 1 {
 		names := make([]string, len(candidates))
 		for i, c := range candidates {
-			names[i] = c.QualifiedName()
+			names[i] = toOperationInfo(s, c.rootKind, c.field).QualifiedName()
 		}
 		sort.Strings(names)
 
@@ -304,24 +334,28 @@ func rootKinds(s *schema) []rootKind {
 	return roots
 }
 
-func findFields(s *schema, typeName string) []schemaField {
-	for _, t := range s.Types {
-		if t.Name == typeName {
-			return t.Fields
+func findType(s *schema, typeName string) *fullType {
+	for i := range s.Types {
+		if s.Types[i].Name == typeName {
+			return &s.Types[i]
 		}
 	}
 
 	return nil
 }
 
-func toOperationInfo(kind string, f schemaField) OperationInfo {
+func findFields(s *schema, typeName string) []schemaField {
+	if t := findType(s, typeName); t != nil {
+		return t.Fields
+	}
+
+	return nil
+}
+
+func toOperationInfo(s *schema, kind string, f schemaField) OperationInfo {
 	args := make([]ArgInfo, len(f.Args))
 	for i, a := range f.Args {
-		args[i] = ArgInfo{
-			Name:        a.Name,
-			Type:        a.Type.String(),
-			Description: a.Description,
-		}
+		args[i] = toArgInfo(s, a, map[string]bool{})
 	}
 
 	return OperationInfo{
@@ -333,6 +367,44 @@ func toOperationInfo(kind string, f schemaField) OperationInfo {
 		IsDeprecated:      f.IsDeprecated,
 		DeprecationReason: f.DeprecationReason,
 	}
+}
+
+// seen guards against self-referencing input types recursing forever; it's
+// fresh per top-level arg, so sibling args sharing a type aren't falsely
+// flagged as recursive.
+func toArgInfo(s *schema, a inputValue, seen map[string]bool) ArgInfo {
+	info := ArgInfo{
+		Name:        a.Name,
+		Type:        a.Type.String(),
+		Description: a.Description,
+	}
+
+	t := findType(s, baseType(a.Type).Name)
+	if t == nil {
+		return info
+	}
+
+	switch t.Kind {
+	case "INPUT_OBJECT":
+		if seen[t.Name] {
+			info.IsRecursiveRef = true
+			return info
+		}
+
+		seen[t.Name] = true
+		defer delete(seen, t.Name)
+
+		info.InputFields = make([]ArgInfo, len(t.InputFields))
+		for i, f := range t.InputFields {
+			info.InputFields[i] = toArgInfo(s, f, seen)
+		}
+	case "ENUM":
+		for _, v := range t.EnumValues {
+			info.EnumValues = append(info.EnumValues, v.Name)
+		}
+	}
+
+	return info
 }
 
 func splitQualified(name string) (kind, bareName string, ok bool) {
