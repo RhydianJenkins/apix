@@ -77,7 +77,8 @@ type HTTPOptions struct {
 	User            string `yaml:"user,omitempty"`
 	Pass            string `yaml:"pass,omitempty"`
 	OpenAPISpecPath string `yaml:"openapispecpath,omitempty"`
-	Port            int    `yaml:"port,omitempty"` // if set, base must be host-only and is combined as "scheme://host:port"
+	GraphQL         bool   `yaml:"graphql,omitempty"` // if true, `apix show` discovers operations via introspection instead of the OAS spec
+	Port            int    `yaml:"port,omitempty"`    // if set, base must be host-only and is combined as "scheme://host:port"
 }
 
 type GRPCOptions struct {
@@ -87,6 +88,10 @@ type GRPCOptions struct {
 
 func (d *Domain) IsGRPC() bool {
 	return d != nil && d.GRPC != nil
+}
+
+func (d *Domain) IsGraphQL() bool {
+	return d != nil && d.HTTP != nil && d.HTTP.GraphQL
 }
 
 func (d *Domain) Protocol() string {

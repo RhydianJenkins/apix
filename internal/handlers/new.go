@@ -16,6 +16,7 @@ func NewHandler(cmd *cobra.Command, args []string) {
 	user, _ := cmd.Flags().GetString("user")
 	pass, _ := cmd.Flags().GetString("pass")
 	oas, _ := cmd.Flags().GetString("oas")
+	graphql, _ := cmd.Flags().GetBool("graphql")
 	protocol, _ := cmd.Flags().GetString("protocol")
 	insecure, _ := cmd.Flags().GetBool("insecure")
 	port, _ := cmd.Flags().GetInt("port")
@@ -25,6 +26,11 @@ func NewHandler(cmd *cobra.Command, args []string) {
 
 	if protocol != config.ProtocolHTTP && protocol != config.ProtocolGRPC {
 		fmt.Fprintf(os.Stderr, "invalid --protocol %q: must be %q or %q\n", protocol, config.ProtocolHTTP, config.ProtocolGRPC)
+		os.Exit(1)
+	}
+
+	if oas != "" && graphql {
+		fmt.Fprintf(os.Stderr, "cannot set both --oas and --graphql on the same domain\n")
 		os.Exit(1)
 	}
 
@@ -50,6 +56,7 @@ func NewHandler(cmd *cobra.Command, args []string) {
 			User:            user,
 			Pass:            pass,
 			OpenAPISpecPath: oas,
+			GraphQL:         graphql,
 			Port:            port,
 		}
 	}

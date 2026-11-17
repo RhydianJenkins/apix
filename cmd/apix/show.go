@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/rhydianjenkins/apix/v3/internal/config"
+	"github.com/rhydianjenkins/apix/v3/internal/graphqlclient"
 	"github.com/rhydianjenkins/apix/v3/internal/grpcclient"
 	"github.com/rhydianjenkins/apix/v3/internal/handlers"
 	"github.com/rhydianjenkins/apix/v3/internal/oas"
@@ -23,10 +24,13 @@ needing shell tab completion - useful for scripts and non-interactive callers:
     connected OpenAPI spec.
   - gRPC domains print "package.Service/Method(RequestType) -> ResponseType"
     for each method found via server reflection.
+  - GraphQL domains (http, with --graphql set) print
+    "Query.field(arg: Type) -> ReturnType" for each Query/Mutation/Subscription
+    field found via introspection.
 
-With a path or method name, shows a full summary of that single endpoint or
-method instead.`,
-		Example:      "apix show\napix show --method post\napix show /users/{id}\napix show GetUser\napix show mypkg.UserService/GetUser",
+With a path, method, or operation name, shows a full summary of that single
+endpoint, method, or operation instead.`,
+		Example:      "apix show\napix show --method post\napix show /users/{id}\napix show GetUser\napix show mypkg.UserService/GetUser\napix show Query.user",
 		Args:         cobra.MaximumNArgs(1),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -38,6 +42,10 @@ method instead.`,
 			if len(args) == 0 {
 				if activeDomain.IsGRPC() {
 					return listGRPCMethods(activeDomain)
+				}
+
+				if activeDomain.IsGraphQL() {
+					return listGraphQLOperations(activeDomain)
 				}
 
 				method, _ := cmd.Flags().GetString("method")
@@ -69,6 +77,20 @@ method instead.`,
 				}
 
 				return methods, cobra.ShellCompDirectiveNoFileComp
+			}
+
+			if activeDomain.IsGraphQL() {
+				infos, err := graphqlclient.ListOperations(activeDomain, activeDomain.Headers)
+				if err != nil {
+					return nil, cobra.ShellCompDirectiveNoFileComp
+				}
+
+				names := make([]string, len(infos))
+				for i, info := range infos {
+					names[i] = info.QualifiedName()
+				}
+
+				return names, cobra.ShellCompDirectiveNoFileComp
 			}
 
 			if !oas.HasValidOpenAPISpec(activeDomain) {
@@ -142,6 +164,25 @@ func listGRPCMethods(domain *config.Domain) error {
 
 	for _, m := range methods {
 		fmt.Printf("%s(%s) -> %s\n", m.QualifiedName(), m.Input.FullName(), m.Output.FullName())
+	}
+
+	return nil
+}
+
+func listGraphQLOperations(domain *config.Domain) error {
+	infos, err := graphqlclient.ListOperations(domain, domain.Headers)
+
+	if err != nil {
+		return fmt.Errorf("failed to list operations via introspection: %w", err)
+	}
+
+	if len(infos) == 0 {
+		fmt.Println("No operations found.")
+		return nil
+	}
+
+	for _, info := range infos {
+		fmt.Println(info.Signature())
 	}
 
 	return nil

@@ -2,13 +2,13 @@
 
 **apix** is a CLI HTTP and gRPC client that manages requests across multiple API environments.
 
-It handles authentication, domain switching, and [OpenAPI Specification (OAS)](https://swagger.io/specification/) (when using http) or [server reflection](https://grpc.io/docs/guides/reflection/) (when using gRPC).
+It handles authentication, domain switching, and discoverability via [OpenAPI Specification (OAS)](https://swagger.io/specification/) or [GraphQL introspection](https://graphql.org/learn/introspection/) (both over http), or [server reflection](https://grpc.io/docs/guides/reflection/) (gRPC).
 
 ## ✨ Features
 
 - Manage multiple API domains under one tool
 - Simple declarative `yaml` config
-- Endpoint `<tab>` completions and discoverability via OAS or reflection
+- Endpoint `<tab>` completions and discoverability via OAS, GraphQL introspection, or gRPC reflection
 
 ## 📦 Getting Started
 
@@ -117,6 +117,36 @@ apix new myapi https://api.example.com --oas "/local/path/to/myOAS.yaml"
 ```
 
 Assuming you've set up shell completions, you should be able to `<tab>` complete your endpoints! You can also list them non-interactively with `apix show` (see above).
+
+</details>
+
+<details>
+<summary><strong>How do I get it working with GraphQL?</strong></summary>
+
+GraphQL is still just HTTP under the hood - `apix get/post/put/patch/delete` already work against a GraphQL endpoint as-is, with the query/variables as the request body. What GraphQL has that plain REST doesn't is a live, self-describing schema (via [introspection](https://graphql.org/learn/introspection/)), so `apix` can offer the same `<tab>` completion and `apix show` discoverability it gives OAS and gRPC domains, without a separate spec file:
+
+```sh
+apix new mygql https://api.example.com/graphql --graphql
+```
+
+`--graphql` tells `apix show` (and completion) to query the domain itself for its schema, instead of looking for `--oas`. Listing shows every `Query`/`Mutation`/`Subscription` field:
+
+```sh
+apix show
+# Query.user(id: ID!) -> User
+# Mutation.createUser(input: CreateUserInput!) -> User
+# ...
+```
+
+...and showing one (bare, or qualified if the name exists on more than one root type) prints its args, description, deprecation, and return type:
+
+```sh
+apix show user
+# or, if ambiguous:
+apix show Query.user
+```
+
+Introspection can't tell `apix` which field is safe to call without side effects, so `show` never invokes anything - it only describes the schema. Making the actual call is still a normal `apix post` with a JSON body.
 
 </details>
 

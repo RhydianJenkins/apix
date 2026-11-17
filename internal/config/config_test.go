@@ -48,6 +48,28 @@ func TestDomain_IsGRPC(t *testing.T) {
 	}
 }
 
+func TestDomain_IsGraphQL(t *testing.T) {
+	tests := map[string]struct {
+		domain *Domain
+		want   bool
+	}{
+		"nil domain":                      {nil, false},
+		"no options set":                  {&Domain{}, false},
+		"grpc options set":                {&Domain{GRPC: &GRPCOptions{}}, false},
+		"http options, no flag":           {&Domain{HTTP: &HTTPOptions{}}, false},
+		"http options, graphql":           {&Domain{HTTP: &HTTPOptions{GraphQL: true}}, true},
+		"http options, oas (not graphql)": {&Domain{HTTP: &HTTPOptions{OpenAPISpecPath: "spec.yaml"}}, false},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			if got := tc.domain.IsGraphQL(); got != tc.want {
+				t.Errorf("IsGraphQL() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
 func newConfigFile(t *testing.T) string {
 	t.Helper()
 

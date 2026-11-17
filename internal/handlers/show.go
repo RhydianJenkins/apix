@@ -30,6 +30,20 @@ func ShowHandler(cmd *cobra.Command, args []string) {
 		return
 	}
 
+	if domain.IsGraphQL() {
+		headers, _ := cmd.Flags().GetStringSlice("header")
+		headerMap := ParseHeaders(headers)
+
+		summary, err := GraphQLShowHandler(domain, target, headerMap)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		fmt.Print(summary)
+		return
+	}
+
 	if !oas.HasValidOpenAPISpec(domain) {
 		fmt.Printf("No OpenAPI spec is connected to the active domain %q.\nConnect one with `apix new --oas <path/url>` or `apix edit`.\n", domain.Name)
 		return

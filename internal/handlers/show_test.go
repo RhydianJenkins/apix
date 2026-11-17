@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -164,6 +165,50 @@ func TestShowHandler_GRPCUnknownMethod(t *testing.T) {
 
 	if !strings.Contains(output, "failed to resolve method") {
 		t.Errorf("expected a helpful 'failed to resolve method' error, got: %s", output)
+	}
+}
+
+func TestShowHandler_GraphQL(t *testing.T) {
+	newConfigFile(t)
+
+	domain := newGraphQLTestDomain(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(graphqlShowTestSchema))
+	})
+
+	config.SetDomain(domain)
+
+	cmd := &cobra.Command{}
+	cmd.Flags().StringSliceP("header", "H", []string{}, "")
+
+	output := captureStdout(t, func() {
+		ShowHandler(cmd, []string{"user"})
+	})
+
+	if !strings.Contains(output, "Query.user(id: ID!) -> User") {
+		t.Errorf("expected output to contain the resolved operation, got: %s", output)
+	}
+}
+
+func TestShowHandler_GraphQLUnknownOperation(t *testing.T) {
+	newConfigFile(t)
+
+	domain := newGraphQLTestDomain(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(graphqlShowTestSchema))
+	})
+
+	config.SetDomain(domain)
+
+	cmd := &cobra.Command{}
+	cmd.Flags().StringSliceP("header", "H", []string{}, "")
+
+	output := captureStdout(t, func() {
+		ShowHandler(cmd, []string{"doesNotExist"})
+	})
+
+	if !strings.Contains(output, "failed to resolve operation") {
+		t.Errorf("expected a helpful 'failed to resolve operation' error, got: %s", output)
 	}
 }
 
