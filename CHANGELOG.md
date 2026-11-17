@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.4.0](https://github.com/RhydianJenkins/apix/compare/v3.3.0...v3.4.0) (2026-11-17)
+
+
+### Features
+
+* Add graphql show support, and use introspection for gql queries ([f591a94](https://github.com/RhydianJenkins/apix/commit/f591a9465cc2772de57d96ca545a154b626523c1))
+* Add graphql support ([41a11df](https://github.com/RhydianJenkins/apix/commit/41a11df6ca3aa1e8173141213aedea58105133f4))
+
 ## [3.3.0](https://github.com/RhydianJenkins/apix/compare/v3.2.0...v3.3.0) (2026-10-28)
 
 
