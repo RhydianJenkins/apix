@@ -141,9 +141,13 @@ apix show
 ...and showing one (bare, or qualified if the name exists on more than one root type) prints its args, description, deprecation, and return type:
 
 ```sh
-apix show user
-# or, if ambiguous:
 apix show Query.user
+
+# or, if you want more information on the selectable fields:
+apix show -v Query.user
+
+# then show that information
+apix show -v Query.user.details
 ```
 
 Introspection can't tell `apix` which field is safe to call without side effects, so `show` never invokes anything - it only describes the schema. Making the actual call is still a normal `apix post` with a JSON body.

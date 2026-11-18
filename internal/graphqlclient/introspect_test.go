@@ -372,6 +372,176 @@ func TestResolveOperation_GuardsAgainstSelfReferencingInput(t *testing.T) {
 	}
 }
 
+const fieldPathSchemaResponse = `{
+  "data": {
+    "__schema": {
+      "queryType": {"name": "Query"},
+      "mutationType": null,
+      "subscriptionType": null,
+      "types": [
+        {
+          "kind": "OBJECT",
+          "name": "Query",
+          "fields": [
+            {
+              "name": "account",
+              "description": "",
+              "args": [],
+              "type": {"kind": "OBJECT", "name": "Account", "ofType": null},
+              "isDeprecated": false,
+              "deprecationReason": null
+            }
+          ]
+        },
+        {
+          "kind": "OBJECT",
+          "name": "Account",
+          "fields": [
+            {
+              "name": "number",
+              "description": "The account number.",
+              "args": [],
+              "type": {"kind": "SCALAR", "name": "String", "ofType": null},
+              "isDeprecated": false,
+              "deprecationReason": null
+            },
+            {
+              "name": "serviceTransfers",
+              "description": "",
+              "args": [],
+              "type": {"kind": "NON_NULL", "name": null, "ofType": {"kind": "LIST", "name": null, "ofType": {"kind": "NON_NULL", "name": null, "ofType": {"kind": "OBJECT", "name": "ServiceTransfer", "ofType": null}}}},
+              "isDeprecated": false,
+              "deprecationReason": null
+            }
+          ]
+        },
+        {
+          "kind": "OBJECT",
+          "name": "ServiceTransfer",
+          "fields": [
+            {
+              "name": "id",
+              "description": "The transfer's ID.",
+              "args": [],
+              "type": {"kind": "NON_NULL", "name": null, "ofType": {"kind": "SCALAR", "name": "ID", "ofType": null}},
+              "isDeprecated": false,
+              "deprecationReason": null
+            },
+            {
+              "name": "status",
+              "description": "",
+              "args": [],
+              "type": {"kind": "ENUM", "name": "TransferStatus", "ofType": null},
+              "isDeprecated": true,
+              "deprecationReason": "Use state instead."
+            }
+          ]
+        }
+      ]
+    }
+  }
+}`
+
+func TestResolveOperation_ListsResultFields(t *testing.T) {
+	domain := newTestDomain(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(fieldPathSchemaResponse))
+	})
+
+	info, err := graphqlclient.ResolveOperation(domain, "Query.account", nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(info.Fields) != 2 {
+		t.Fatalf("expected 2 result fields, got %d: %+v", len(info.Fields), info.Fields)
+	}
+
+	if info.Fields[0].Name != "number" || info.Fields[0].IsExpandable {
+		t.Errorf("expected a non-expandable scalar 'number' field, got %+v", info.Fields[0])
+	}
+
+	if info.Fields[1].Name != "serviceTransfers" || !info.Fields[1].IsExpandable {
+		t.Errorf("expected an expandable 'serviceTransfers' field, got %+v", info.Fields[1])
+	}
+}
+
+func TestResolveOperation_FieldPath_Qualified(t *testing.T) {
+	domain := newTestDomain(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(fieldPathSchemaResponse))
+	})
+
+	info, err := graphqlclient.ResolveOperation(domain, "Query.account.serviceTransfers", nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if info.QualifiedName() != "Query.account.serviceTransfers" {
+		t.Errorf("expected QualifiedName %q, got %q", "Query.account.serviceTransfers", info.QualifiedName())
+	}
+
+	if info.ReturnType != "[ServiceTransfer!]!" {
+		t.Errorf("expected ReturnType %q, got %q", "[ServiceTransfer!]!", info.ReturnType)
+	}
+
+	if len(info.Fields) != 2 || info.Fields[0].Name != "id" || info.Fields[1].Name != "status" {
+		t.Errorf("expected id/status fields on ServiceTransfer, got %+v", info.Fields)
+	}
+
+	if !info.Fields[1].IsDeprecated || info.Fields[1].DeprecationReason != "Use state instead." {
+		t.Errorf("expected status to be deprecated with a reason, got %+v", info.Fields[1])
+	}
+}
+
+func TestResolveOperation_FieldPath_Unqualified(t *testing.T) {
+	domain := newTestDomain(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(fieldPathSchemaResponse))
+	})
+
+	info, err := graphqlclient.ResolveOperation(domain, "account.serviceTransfers", nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if info.QualifiedName() != "Query.account.serviceTransfers" {
+		t.Errorf("expected QualifiedName %q, got %q", "Query.account.serviceTransfers", info.QualifiedName())
+	}
+}
+
+func TestResolveOperation_FieldPath_UnknownField(t *testing.T) {
+	domain := newTestDomain(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(fieldPathSchemaResponse))
+	})
+
+	_, err := graphqlclient.ResolveOperation(domain, "Query.account.doesNotExist", nil)
+	if err == nil {
+		t.Fatal("expected an error for an unknown nested field, got nil")
+	}
+
+	if !strings.Contains(err.Error(), `unknown field "doesNotExist"`) {
+		t.Errorf("expected an 'unknown field' error, got: %v", err)
+	}
+}
+
+func TestResolveOperation_FieldPath_NotTraversable(t *testing.T) {
+	domain := newTestDomain(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(fieldPathSchemaResponse))
+	})
+
+	_, err := graphqlclient.ResolveOperation(domain, "Query.account.number.whatever", nil)
+	if err == nil {
+		t.Fatal("expected an error when traversing past a scalar field, got nil")
+	}
+
+	if !strings.Contains(err.Error(), "is not an object and cannot be traversed further") {
+		t.Errorf("expected a 'not traversable' error, got: %v", err)
+	}
+}
+
 func TestIntrospect_GraphQLErrorsAreSurfaced(t *testing.T) {
 	domain := newTestDomain(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

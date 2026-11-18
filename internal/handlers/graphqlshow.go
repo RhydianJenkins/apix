@@ -11,7 +11,7 @@ import (
 	"github.com/rhydianjenkins/apix/v3/internal/graphqlclient"
 )
 
-func GraphQLShowHandler(domain *config.Domain, name string, headers map[string]string) (string, error) {
+func GraphQLShowHandler(domain *config.Domain, name string, headers map[string]string, verbose bool) (string, error) {
 	mergedHeaders := make(map[string]string)
 
 	if domain != nil && domain.Headers != nil {
@@ -29,5 +29,5 @@ func GraphQLShowHandler(domain *config.Domain, name string, headers map[string]s
 		return "", fmt.Errorf("failed to resolve operation %q: %w", name, err)
 	}
 
-	return graphqlclient.FormatOperationSummary(info), nil
+	return graphqlclient.FormatOperationSummary(info, verbose), nil
 }
