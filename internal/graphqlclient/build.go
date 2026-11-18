@@ -23,7 +23,7 @@ func BuildQueryDocument(domain *config.Domain, name string, fieldPaths []string,
 		return nil, err
 	}
 
-	match, err := resolveField(s, name)
+	match, err := resolveField(s, name, "")
 	if err != nil {
 		return nil, err
 	}

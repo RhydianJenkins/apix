@@ -4,7 +4,6 @@ package graphqlclient
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -298,7 +297,7 @@ func (e *notFoundError) Error() string {
 	return fmt.Sprintf("no operation named %q found via introspection", e.name)
 }
 
-func resolveField(s *schema, name string) (*fieldMatch, error) {
+func resolveField(s *schema, name, suffix string) (*fieldMatch, error) {
 	qualifiedKind, bareName, isQualified := splitQualified(name)
 
 	var candidates []fieldMatch
@@ -331,7 +330,7 @@ func resolveField(s *schema, name string) (*fieldMatch, error) {
 
 		return nil, fmt.Errorf(
 			"operation name %q is ambiguous, found on multiple root types: %s\nqualify it, e.g. `apix show %s`",
-			name, strings.Join(names, ", "), names[0],
+			name, strings.Join(names, ", "), names[0]+suffix,
 		)
 	}
 
@@ -341,19 +340,23 @@ func resolveField(s *schema, name string) (*fieldMatch, error) {
 func resolveFieldPath(s *schema, name string) (*fieldMatch, []string, error) {
 	segments := strings.Split(name, ".")
 
-	for end := len(segments); end >= 1; end-- {
-		match, err := resolveField(s, strings.Join(segments[:end], "."))
-		if err == nil {
-			return match, segments[end:], nil
-		}
-
-		var nf *notFoundError
-		if !errors.As(err, &nf) {
-			return nil, nil, err
+	end := 1
+	if len(segments) > 1 {
+		switch segments[0] {
+		case "Query", "Mutation", "Subscription":
+			end = 2
 		}
 	}
 
-	return nil, nil, &notFoundError{name: name}
+	suffix := ""
+	if end < len(segments) {
+		suffix = "." + strings.Join(segments[end:], ".")
+	}
+	match, err := resolveField(s, strings.Join(segments[:end], "."), suffix)
+	if err != nil {
+		return nil, nil, err
+	}
+	return match, segments[end:], nil
 }
 
 // descendFieldPath walks path, a sequence of field names, from fieldType -

@@ -597,7 +597,11 @@ func TestResolveOperation_FieldPath_Qualified(t *testing.T) {
 		t.Errorf("expected ReturnType %q, got %q", "[ServiceTransfer!]!", info.ReturnType)
 	}
 
-	if len(info.Fields) != 2 || info.Fields[0].Name != "id" || info.Fields[1].Name != "status" {
+	if len(info.Fields) != 2 {
+		t.Fatalf("expected 2 result fields, got %d: %+v", len(info.Fields), info.Fields)
+	}
+
+	if info.Fields[0].Name != "id" || info.Fields[1].Name != "status" {
 		t.Errorf("expected id/status fields on ServiceTransfer, got %+v", info.Fields)
 	}
 
@@ -667,5 +671,54 @@ func TestIntrospect_GraphQLErrorsAreSurfaced(t *testing.T) {
 
 	if !strings.Contains(err.Error(), "introspection is disabled") {
 		t.Errorf("expected the GraphQL error message to be surfaced, got: %v", err)
+	}
+}
+
+func TestResolveOperation_FieldPath_RootQualifiers(t *testing.T) {
+	const response = `{"data":{"__schema":{
+		"queryType":{"name":"QueryRoot"},
+		"mutationType":{"name":"MutationRoot"},
+		"types":[
+			{"name":"QueryRoot","fields":[
+				{"name":"Query","type":{"kind":"OBJECT","name":"Container"}},
+				{"name":"Mutation","type":{"kind":"OBJECT","name":"Container"}},
+				{"name":"Subscription","type":{"kind":"OBJECT","name":"Container"}},
+				{"name":"account","type":{"kind":"OBJECT","name":"Account"}}
+			]},
+			{"name":"MutationRoot","fields":[
+				{"name":"account","type":{"kind":"OBJECT","name":"Account"}}
+			]},
+			{"name":"Container","fields":[
+				{"name":"account","type":{"kind":"OBJECT","name":"Account"}},
+				{"name":"missing","type":{"kind":"SCALAR","name":"String"}}
+			]},
+			{"name":"Account","fields":[
+				{"name":"number","type":{"kind":"SCALAR","name":"String"}}
+			]}
+		]
+	}}}`
+	domain := newTestDomain(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(response))
+	})
+
+	for _, path := range []string{"Query.missing", "Mutation.missing", "Subscription.missing", "Subscription.account"} {
+		t.Run(path, func(t *testing.T) {
+			_, err := graphqlclient.ResolveOperation(domain, path, nil)
+			if err == nil || !strings.Contains(err.Error(), "no operation named") {
+				t.Fatalf("expected not found for explicit root %q, got %v", path, err)
+			}
+		})
+	}
+	info, err := graphqlclient.ResolveOperation(domain, "Query.Mutation.account.number", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.QualifiedName() != "Query.Mutation.account.number" || info.ReturnType != "String" {
+		t.Fatalf("unexpected nested operation: %+v", info)
+	}
+	_, err = graphqlclient.ResolveOperation(domain, "account.number", nil)
+	if err == nil || !strings.Contains(err.Error(), "`apix show Mutation.account.number`") {
+		t.Fatalf("expected ambiguity hint to preserve nested path, got %v", err)
 	}
 }
