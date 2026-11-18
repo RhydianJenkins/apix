@@ -32,6 +32,7 @@ const introspectionQuery = `query IntrospectionQuery {
           name
           description
           type { ...TypeRef }
+          defaultValue
         }
         type { ...TypeRef }
         isDeprecated
@@ -105,9 +106,10 @@ func (t *typeRef) String() string {
 }
 
 type inputValue struct {
-	Name        string  `json:"name"`
-	Description string  `json:"description"`
-	Type        typeRef `json:"type"`
+	Name         string  `json:"name"`
+	Description  string  `json:"description"`
+	Type         typeRef `json:"type"`
+	DefaultValue *string `json:"defaultValue"`
 }
 
 type schemaField struct {
@@ -172,6 +174,7 @@ type FieldInfo struct {
 	IsDeprecated      bool
 	DeprecationReason string
 	IsExpandable      bool
+	HasRequiredArgs   bool
 }
 
 type OperationInfo struct {
@@ -478,10 +481,21 @@ func resultFields(s *schema, t typeRef) []FieldInfo {
 			IsDeprecated:      f.IsDeprecated,
 			DeprecationReason: f.DeprecationReason,
 			IsExpandable:      fb.Kind == "OBJECT" || fb.Kind == "INTERFACE",
+			HasRequiredArgs:   hasRequiredArg(f.Args),
 		}
 	}
 
 	return infos
+}
+
+func hasRequiredArg(args []inputValue) bool {
+	for _, a := range args {
+		if a.Type.Kind == "NON_NULL" && a.DefaultValue == nil {
+			return true
+		}
+	}
+
+	return false
 }
 
 func toArgInfo(s *schema, a inputValue, seen map[string]bool) ArgInfo {

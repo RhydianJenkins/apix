@@ -58,7 +58,12 @@ const buildTestSchemaResponse = `{
             {"name": "id", "args": [], "type": {"kind": "NON_NULL", "name": null, "ofType": {"kind": "SCALAR", "name": "ID", "ofType": null}}},
             {"name": "name", "args": [], "type": {"kind": "SCALAR", "name": "String", "ofType": null}},
             {"name": "tags", "args": [], "type": {"kind": "LIST", "name": null, "ofType": {"kind": "NON_NULL", "name": null, "ofType": {"kind": "SCALAR", "name": "String", "ofType": null}}}},
-            {"name": "address", "args": [], "type": {"kind": "OBJECT", "name": "Address", "ofType": null}}
+            {"name": "address", "args": [], "type": {"kind": "OBJECT", "name": "Address", "ofType": null}},
+            {
+              "name": "balanceAt",
+              "args": [{"name": "date", "description": "", "type": {"kind": "NON_NULL", "name": null, "ofType": {"kind": "SCALAR", "name": "String", "ofType": null}}, "defaultValue": null}],
+              "type": {"kind": "SCALAR", "name": "Float", "ofType": null}
+            }
           ]
         },
         {
@@ -117,6 +122,23 @@ func TestBuildQueryDocument_ObjectReturn_DefaultSelection(t *testing.T) {
 
 	if strings.Contains(doc.Query, "address") {
 		t.Errorf("expected the default selection to skip the object-typed address field, got:\n%s", doc.Query)
+	}
+
+	if strings.Contains(doc.Query, "balanceAt") {
+		t.Errorf("expected the default selection to skip balanceAt, which has a required argument apix can't supply, got:\n%s", doc.Query)
+	}
+}
+
+func TestBuildQueryDocument_FieldsFlag_RejectsFieldWithRequiredArg(t *testing.T) {
+	domain := newBuildTestDomain(t)
+
+	_, err := graphqlclient.BuildQueryDocument(domain, "user", []string{"balanceAt"}, nil)
+	if err == nil {
+		t.Fatal("expected an error when explicitly selecting a field with a required argument, got nil")
+	}
+
+	if !strings.Contains(err.Error(), `field "balanceAt" requires an argument`) {
+		t.Errorf("expected a 'requires an argument' error, got: %v", err)
 	}
 }
 

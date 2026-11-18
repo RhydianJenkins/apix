@@ -466,6 +466,118 @@ func TestResolveOperation_ListsResultFields(t *testing.T) {
 	}
 }
 
+const requiredArgSchemaResponse = `{
+  "data": {
+    "__schema": {
+      "queryType": {"name": "Query"},
+      "mutationType": null,
+      "subscriptionType": null,
+      "types": [
+        {
+          "kind": "OBJECT",
+          "name": "Query",
+          "fields": [
+            {
+              "name": "account",
+              "description": "",
+              "args": [],
+              "type": {"kind": "OBJECT", "name": "Account", "ofType": null},
+              "isDeprecated": false,
+              "deprecationReason": null
+            }
+          ]
+        },
+        {
+          "kind": "OBJECT",
+          "name": "Account",
+          "fields": [
+            {
+              "name": "number",
+              "description": "",
+              "args": [],
+              "type": {"kind": "SCALAR", "name": "String", "ofType": null},
+              "isDeprecated": false,
+              "deprecationReason": null
+            },
+            {
+              "name": "balanceAt",
+              "description": "",
+              "args": [
+                {"name": "date", "description": "", "type": {"kind": "NON_NULL", "name": null, "ofType": {"kind": "SCALAR", "name": "String", "ofType": null}}, "defaultValue": null}
+              ],
+              "type": {"kind": "SCALAR", "name": "Float", "ofType": null},
+              "isDeprecated": false,
+              "deprecationReason": null
+            },
+            {
+              "name": "balanceWithFallback",
+              "description": "",
+              "args": [
+                {"name": "currency", "description": "", "type": {"kind": "NON_NULL", "name": null, "ofType": {"kind": "SCALAR", "name": "String", "ofType": null}}, "defaultValue": "\"GBP\""}
+              ],
+              "type": {"kind": "SCALAR", "name": "Float", "ofType": null},
+              "isDeprecated": false,
+              "deprecationReason": null
+            },
+            {
+              "name": "nickname",
+              "description": "",
+              "args": [
+                {"name": "locale", "description": "", "type": {"kind": "SCALAR", "name": "String", "ofType": null}, "defaultValue": null}
+              ],
+              "type": {"kind": "SCALAR", "name": "String", "ofType": null},
+              "isDeprecated": false,
+              "deprecationReason": null
+            }
+          ]
+        }
+      ]
+    }
+  }
+}`
+
+// TestResolveOperation_FieldsWithRequiredArgs locks in which fields count as
+// having a "required" argument for FieldInfo.HasRequiredArgs: non-null with
+// no default (balanceAt) is required; non-null with a default
+// (balanceWithFallback) and nullable without a default (nickname) are not.
+func TestResolveOperation_FieldsWithRequiredArgs(t *testing.T) {
+	domain := newTestDomain(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(requiredArgSchemaResponse))
+	})
+
+	info, err := graphqlclient.ResolveOperation(domain, "Query.account", nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	byName := make(map[string]graphqlclient.FieldInfo, len(info.Fields))
+	for _, f := range info.Fields {
+		byName[f.Name] = f
+	}
+
+	cases := []struct {
+		name string
+		want bool
+	}{
+		{"number", false},
+		{"balanceAt", true},
+		{"balanceWithFallback", false},
+		{"nickname", false},
+	}
+
+	for _, c := range cases {
+		f, ok := byName[c.name]
+		if !ok {
+			t.Fatalf("expected a %q field, got %+v", c.name, info.Fields)
+		}
+
+		if f.HasRequiredArgs != c.want {
+			t.Errorf("field %q: expected HasRequiredArgs=%v, got %v", c.name, c.want, f.HasRequiredArgs)
+		}
+	}
+}
+
 func TestResolveOperation_FieldPath_Qualified(t *testing.T) {
 	domain := newTestDomain(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

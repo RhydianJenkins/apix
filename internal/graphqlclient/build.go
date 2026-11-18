@@ -90,7 +90,7 @@ func applyDefaultSelection(node *selectionNode, s *schema, t typeRef) {
 
 	var leafNames []string
 	for _, f := range findFields(s, t.Name) {
-		if fb := baseType(f.Type); fb.Kind == "SCALAR" || fb.Kind == "ENUM" {
+		if fb := baseType(f.Type); (fb.Kind == "SCALAR" || fb.Kind == "ENUM") && !hasRequiredArg(f.Args) {
 			leafNames = append(leafNames, f.Name)
 		}
 	}
@@ -121,6 +121,10 @@ func applyFieldPath(node *selectionNode, s *schema, t typeRef, segments []string
 
 	if matched == nil {
 		return fmt.Errorf("unknown field %q on type %q", seg, t.Name)
+	}
+
+	if hasRequiredArg(matched.Args) {
+		return fmt.Errorf("field %q requires an argument apix cannot supply when building a selection (in path %q)", seg, strings.Join(segments, "."))
 	}
 
 	child := node.findOrAddChild(seg)
