@@ -33,8 +33,9 @@ func ShowHandler(cmd *cobra.Command, args []string) {
 	if domain.IsGraphQL() {
 		headers, _ := cmd.Flags().GetStringSlice("header")
 		headerMap := ParseHeaders(headers)
+		verbose, _ := cmd.Flags().GetBool("verbose")
 
-		summary, err := GraphQLShowHandler(domain, target, headerMap)
+		summary, err := GraphQLShowHandler(domain, target, headerMap, verbose)
 		if err != nil {
 			fmt.Println(err)
 			return

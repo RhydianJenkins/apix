@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func FormatOperationSummary(info *OperationInfo) string {
+func FormatOperationSummary(info *OperationInfo, verbose bool) string {
 	var b strings.Builder
 
 	fmt.Fprintf(&b, "%s\n", info.Signature())
@@ -29,7 +29,32 @@ func FormatOperationSummary(info *OperationInfo) string {
 		}
 	}
 
+	if verbose && len(info.Fields) > 0 {
+		fmt.Fprintf(&b, "\tFields:\n")
+		for _, field := range info.Fields {
+			formatField(&b, field, "\t\t")
+		}
+	}
+
 	return b.String()
+}
+
+func formatField(b *strings.Builder, f FieldInfo, indent string) {
+	summary := fmt.Sprintf("%s: %s", f.Name, f.Type)
+
+	if f.Description != "" {
+		summary += " - " + f.Description
+	}
+
+	fmt.Fprintf(b, "%s%s\n", indent, summary)
+
+	if f.IsDeprecated {
+		if f.DeprecationReason != "" {
+			fmt.Fprintf(b, "%s\tDeprecated: %s\n", indent, f.DeprecationReason)
+		} else {
+			fmt.Fprintf(b, "%s\tDeprecated: true\n", indent)
+		}
+	}
 }
 
 func formatArg(b *strings.Builder, arg ArgInfo, indent string) {

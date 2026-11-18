@@ -15,22 +15,10 @@ import (
 
 func newShowCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "show [path|method]",
-		Short: "List the endpoints or gRPC methods on the active domain, or show a summary of one",
-		Long: `Without an argument, lists what can be called on the active domain without
-needing shell tab completion - useful for scripts and non-interactive callers:
-
-  - HTTP domains print "METHOD /path - summary" for each operation in the
-    connected OpenAPI spec.
-  - gRPC domains print "package.Service/Method(RequestType) -> ResponseType"
-    for each method found via server reflection.
-  - GraphQL domains (http, with --graphql set) print
-    "Query.field(arg: Type) -> ReturnType" for each Query/Mutation/Subscription
-    field found via introspection.
-
-With a path, method, or operation name, shows a full summary of that single
-endpoint, method, or operation instead.`,
-		Example:      "apix show\napix show --method post\napix show /users/{id}\napix show GetUser\napix show mypkg.UserService/GetUser\napix show Query.user",
+		Use:          "show [path|method]",
+		Short:        "List the endpoints or gRPC methods on the active domain, or show a summary of one",
+		Long:         "Without an argument, lists what can be called on the active domain (HTTP via OpenAPI, gRPC via reflection, GraphQL via introspection). With a path, method, or operation name, shows a full summary of that one instead.",
+		Example:      "apix show\napix show --method post\napix show /users/{id}\napix show GetUser\napix show mypkg.UserService/GetUser\napix show Query.user\napix show -v Query.account.serviceTransfers",
 		Args:         cobra.MaximumNArgs(1),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -109,6 +97,7 @@ endpoint, method, or operation instead.`,
 
 	cmd.Flags().StringSliceP("header", "H", []string{}, "Custom metadata in format 'Key: Value' (can be used multiple times, grpc only)")
 	cmd.Flags().StringP("method", "m", "", "filter HTTP endpoints by verb (get, post, put, patch, delete); only applies when no path/method is given, ignored for grpc domains")
+	cmd.Flags().BoolP("verbose", "v", false, "Also list the return type's fields (graphql only)")
 	return cmd
 }
 

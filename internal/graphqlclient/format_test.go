@@ -18,7 +18,7 @@ func TestFormatOperationSummary(t *testing.T) {
 		},
 	}
 
-	out := graphqlclient.FormatOperationSummary(info)
+	out := graphqlclient.FormatOperationSummary(info, false)
 
 	wantContains := []string{
 		"Query.user(id: ID!) -> User",
@@ -59,7 +59,7 @@ func TestFormatOperationSummary_ExpandsInputObjectAndEnumArgs(t *testing.T) {
 		},
 	}
 
-	out := graphqlclient.FormatOperationSummary(info)
+	out := graphqlclient.FormatOperationSummary(info, false)
 
 	wantContains := []string{
 		"identifier: AccountIdentifier!",
@@ -93,10 +93,53 @@ func TestFormatOperationSummary_RecursiveRefNotedInsteadOfLooping(t *testing.T) 
 		},
 	}
 
-	out := graphqlclient.FormatOperationSummary(info)
+	out := graphqlclient.FormatOperationSummary(info, false)
 
 	if !strings.Contains(out, "recursive reference to SelfRefInput") {
 		t.Errorf("expected a recursive reference note, got:\n%s", out)
+	}
+}
+
+func TestFormatOperationSummary_ListsResultFieldsWhenVerbose(t *testing.T) {
+	info := &graphqlclient.OperationInfo{
+		Kind:       "Query",
+		Name:       "account",
+		ReturnType: "Account",
+		Fields: []graphqlclient.FieldInfo{
+			{Name: "number", Type: "String", Description: "The account number."},
+			{Name: "serviceTransfers", Type: "[ServiceTransfer!]!", IsExpandable: true},
+		},
+	}
+
+	out := graphqlclient.FormatOperationSummary(info, true)
+
+	wantContains := []string{
+		"Fields:",
+		"number: String - The account number.",
+		"serviceTransfers: [ServiceTransfer!]!",
+	}
+
+	for _, want := range wantContains {
+		if !strings.Contains(out, want) {
+			t.Errorf("expected output to contain %q, got:\n%s", want, out)
+		}
+	}
+}
+
+func TestFormatOperationSummary_OmitsResultFieldsUnlessVerbose(t *testing.T) {
+	info := &graphqlclient.OperationInfo{
+		Kind:       "Query",
+		Name:       "account",
+		ReturnType: "Account",
+		Fields: []graphqlclient.FieldInfo{
+			{Name: "number", Type: "String", Description: "The account number."},
+		},
+	}
+
+	out := graphqlclient.FormatOperationSummary(info, false)
+
+	if strings.Contains(out, "Fields:") || strings.Contains(out, "number: String") {
+		t.Errorf("expected result fields to be omitted without verbose, got:\n%s", out)
 	}
 }
 
@@ -109,7 +152,7 @@ func TestFormatOperationSummary_Deprecated(t *testing.T) {
 		DeprecationReason: "Use user search instead.",
 	}
 
-	out := graphqlclient.FormatOperationSummary(info)
+	out := graphqlclient.FormatOperationSummary(info, false)
 
 	if !strings.Contains(out, "Query.search() -> [String!]!") {
 		t.Errorf("expected signature with no args, got:\n%s", out)

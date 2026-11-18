@@ -56,7 +56,7 @@ func TestGraphQLShowHandler(t *testing.T) {
 		w.Write([]byte(graphqlShowTestSchema))
 	})
 
-	summary, err := GraphQLShowHandler(domain, "user", nil)
+	summary, err := GraphQLShowHandler(domain, "user", nil, false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -80,7 +80,7 @@ func TestGraphQLShowHandler_UnknownOperation(t *testing.T) {
 		w.Write([]byte(graphqlShowTestSchema))
 	})
 
-	_, err := GraphQLShowHandler(domain, "doesNotExist", nil)
+	_, err := GraphQLShowHandler(domain, "doesNotExist", nil, false)
 	if err == nil {
 		t.Fatal("expected an error for an unknown operation, got nil")
 	}

@@ -4,6 +4,7 @@ package graphqlclient
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -164,6 +165,15 @@ type ArgInfo struct {
 	IsRecursiveRef bool // set instead of expanding InputFields into a cycle
 }
 
+type FieldInfo struct {
+	Name              string
+	Type              string
+	Description       string
+	IsDeprecated      bool
+	DeprecationReason string
+	IsExpandable      bool
+}
+
 type OperationInfo struct {
 	Kind              string // "Query", "Mutation", or "Subscription"
 	Name              string
@@ -172,6 +182,7 @@ type OperationInfo struct {
 	Description       string
 	IsDeprecated      bool
 	DeprecationReason string
+	Fields            []FieldInfo // fields selectable on ReturnType, one level deep; nil for scalar/enum returns
 }
 
 func (o OperationInfo) QualifiedName() string {
@@ -258,19 +269,30 @@ func ResolveOperation(domain *config.Domain, name string, headers map[string]str
 		return nil, err
 	}
 
-	match, err := resolveField(s, name)
+	match, path, err := resolveFieldPath(s, name)
 	if err != nil {
 		return nil, err
 	}
 
-	info := toOperationInfo(s, match.rootKind, match.field)
+	if len(path) == 0 {
+		info := toOperationInfo(s, match.rootKind, match.field)
+		return &info, nil
+	}
 
-	return &info, nil
+	return descendFieldPath(s, match.rootKind, match.field.Name, match.field.Type, path)
 }
 
 type fieldMatch struct {
 	rootKind string
 	field    schemaField
+}
+
+type notFoundError struct {
+	name string
+}
+
+func (e *notFoundError) Error() string {
+	return fmt.Sprintf("no operation named %q found via introspection", e.name)
 }
 
 func resolveField(s *schema, name string) (*fieldMatch, error) {
@@ -294,7 +316,7 @@ func resolveField(s *schema, name string) (*fieldMatch, error) {
 	}
 
 	if len(candidates) == 0 {
-		return nil, fmt.Errorf("no operation named %q found via introspection", name)
+		return nil, &notFoundError{name: name}
 	}
 
 	if len(candidates) > 1 {
@@ -311,6 +333,73 @@ func resolveField(s *schema, name string) (*fieldMatch, error) {
 	}
 
 	return &candidates[0], nil
+}
+
+func resolveFieldPath(s *schema, name string) (*fieldMatch, []string, error) {
+	segments := strings.Split(name, ".")
+
+	for end := len(segments); end >= 1; end-- {
+		match, err := resolveField(s, strings.Join(segments[:end], "."))
+		if err == nil {
+			return match, segments[end:], nil
+		}
+
+		var nf *notFoundError
+		if !errors.As(err, &nf) {
+			return nil, nil, err
+		}
+	}
+
+	return nil, nil, &notFoundError{name: name}
+}
+
+// descendFieldPath walks path, a sequence of field names, from fieldType -
+// the return type of the baseName field already resolved against rootKind -
+// and describes the field found at the end of it as its own OperationInfo.
+func descendFieldPath(s *schema, rootKind, baseName string, fieldType typeRef, path []string) (*OperationInfo, error) {
+	cur := fieldType
+	name := baseName
+
+	var f schemaField
+
+	for _, seg := range path {
+		t := baseType(cur)
+
+		if t.Kind != "OBJECT" && t.Kind != "INTERFACE" {
+			return nil, fmt.Errorf("field %q is not an object and cannot be traversed further (in path %q)", name, strings.Join(path, "."))
+		}
+
+		found := false
+		for _, cf := range findFields(s, t.Name) {
+			if cf.Name == seg {
+				f, found = cf, true
+				break
+			}
+		}
+
+		if !found {
+			return nil, fmt.Errorf("unknown field %q on type %q", seg, t.Name)
+		}
+
+		name += "." + seg
+		cur = f.Type
+	}
+
+	args := make([]ArgInfo, len(f.Args))
+	for i, a := range f.Args {
+		args[i] = toArgInfo(s, a, map[string]bool{})
+	}
+
+	return &OperationInfo{
+		Kind:              rootKind,
+		Name:              name,
+		Args:              args,
+		ReturnType:        f.Type.String(),
+		Description:       f.Description,
+		IsDeprecated:      f.IsDeprecated,
+		DeprecationReason: f.DeprecationReason,
+		Fields:            resultFields(s, f.Type),
+	}, nil
 }
 
 type rootKind struct {
@@ -366,12 +455,35 @@ func toOperationInfo(s *schema, kind string, f schemaField) OperationInfo {
 		Description:       f.Description,
 		IsDeprecated:      f.IsDeprecated,
 		DeprecationReason: f.DeprecationReason,
+		Fields:            resultFields(s, f.Type),
 	}
 }
 
-// seen guards against self-referencing input types recursing forever; it's
-// fresh per top-level arg, so sibling args sharing a type aren't falsely
-// flagged as recursive.
+func resultFields(s *schema, t typeRef) []FieldInfo {
+	base := baseType(t)
+	if base.Kind != "OBJECT" && base.Kind != "INTERFACE" {
+		return nil
+	}
+
+	fields := findFields(s, base.Name)
+	infos := make([]FieldInfo, len(fields))
+
+	for i, f := range fields {
+		fb := baseType(f.Type)
+
+		infos[i] = FieldInfo{
+			Name:              f.Name,
+			Type:              f.Type.String(),
+			Description:       f.Description,
+			IsDeprecated:      f.IsDeprecated,
+			DeprecationReason: f.DeprecationReason,
+			IsExpandable:      fb.Kind == "OBJECT" || fb.Kind == "INTERFACE",
+		}
+	}
+
+	return infos
+}
+
 func toArgInfo(s *schema, a inputValue, seen map[string]bool) ArgInfo {
 	info := ArgInfo{
 		Name:        a.Name,
