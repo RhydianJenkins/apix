@@ -126,6 +126,28 @@ func TestFormatOperationSummary_ListsResultFieldsWhenVerbose(t *testing.T) {
 	}
 }
 
+func TestFormatOperationSummary_FlagsFieldsWithRequiredArgs(t *testing.T) {
+	info := &graphqlclient.OperationInfo{
+		Kind:       "Query",
+		Name:       "account",
+		ReturnType: "Account",
+		Fields: []graphqlclient.FieldInfo{
+			{Name: "number", Type: "String", Description: "The account number."},
+			{Name: "balanceAt", Type: "Money", HasRequiredArgs: true},
+		},
+	}
+
+	out := graphqlclient.FormatOperationSummary(info, true)
+
+	if !strings.Contains(out, "balanceAt: Money (unsupported: requires args)") {
+		t.Errorf("expected balanceAt to be flagged inline on its own line, got:\n%s", out)
+	}
+
+	if n := strings.Count(out, "unsupported: requires args"); n != 1 {
+		t.Errorf("expected exactly one field flagged as unsupported, got %d in:\n%s", n, out)
+	}
+}
+
 func TestFormatOperationSummary_OmitsResultFieldsUnlessVerbose(t *testing.T) {
 	info := &graphqlclient.OperationInfo{
 		Kind:       "Query",

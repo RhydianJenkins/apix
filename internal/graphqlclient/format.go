@@ -42,6 +42,10 @@ func FormatOperationSummary(info *OperationInfo, verbose bool) string {
 func formatField(b *strings.Builder, f FieldInfo, indent string) {
 	summary := fmt.Sprintf("%s: %s", f.Name, f.Type)
 
+	if f.HasRequiredArgs {
+		summary += " (unsupported: requires args)"
+	}
+
 	if f.Description != "" {
 		summary += " - " + f.Description
 	}
