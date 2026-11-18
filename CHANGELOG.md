@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.5.0](https://github.com/RhydianJenkins/apix/compare/v3.4.0...v3.5.0) (2026-11-18)
+
+
+### Features
+
+* add -v flag to show allowing graphql queries to discover and request nested --fields ([49f8666](https://github.com/RhydianJenkins/apix/commit/49f8666118328165855b5752ea36863ca919e79a))
+* warn about unsupported fields in graphql show ([a35b3f4](https://github.com/RhydianJenkins/apix/commit/a35b3f4779e7dc8e69645dff9089fbe8b27be82f))
+
+
+### Bug Fixes
+
+* GraphQL field resolution and required-argument metadata ([21c2866](https://github.com/RhydianJenkins/apix/commit/21c28667226cffd9b68b06f5651292c012706818))
+
 ## [3.4.0](https://github.com/RhydianJenkins/apix/compare/v3.3.0...v3.4.0) (2026-11-17)
 
 
