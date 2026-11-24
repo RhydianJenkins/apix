@@ -37,7 +37,12 @@ apix -c ./examples/pokeapi.yaml get /api/v2/pokemon/ditto
 
 ## 🚀 Usage
 
+Running `apix --help`:
+
+<!-- apix-help:start -->
 ```
+API eXecuter (APIX) is a CLI tool to manage API domains and make requests
+
 Usage:
   apix [command] [flags]
   apix [command]
@@ -65,6 +70,15 @@ Available Commands:
 Flags:
   -c, --config stringArray   path to an apix config file; repeat to layer files, later ones override earlier ones and receive all writes (default ~/.apix.yaml)
   -h, --help                 help for apix
+
+Use "apix [command] --help" for more information about a command.
+```
+<!-- apix-help:end -->
+
+This section is generated from `apix --help` by `TestReadmeHelpSectionUpToDate` (see [`cmd/apix/readme_test.go`](./cmd/apix/readme_test.go)) and checked on every `go test ./...` run, so it can't go stale; don't hand-edit it. If it fails after a command's `Use`/`Short`/`Example` or flags change, regenerate it with:
+
+```sh
+UPDATE_README=1 go test ./cmd/apix -run TestReadmeHelpSectionUpToDate
 ```
 
 ## ❓ FAQ
